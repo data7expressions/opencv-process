@@ -1,8 +1,7 @@
-from process.core import entity
-from ..core.entity import *
+from ..process.managers import *
+
 
 class CvtColor(FunctionEntity):
     def __init__(self):
         super(CvtColor,self).__init__()
 
-main.el('Function').add(CvtColor())

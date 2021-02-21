@@ -7,10 +7,9 @@
         {
             "name": "Python: Current File",
             "type": "python",
-            "request": "launch",
-            "program": "${file}",
+            "request": "launch",            
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/${relativeFileDirname}"
+            "module": "cvlab"
         }
     ]
 }
