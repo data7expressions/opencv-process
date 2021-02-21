@@ -1,0 +1,13 @@
+Type:
+  image:
+  int:
+  string:
+  enum:
+
+Node:
+  Start:
+    description: ""      
+  End:
+    description: "" 
+  Task:
+    description: "" 

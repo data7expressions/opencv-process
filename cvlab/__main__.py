@@ -1,11 +1,13 @@
 from .process.core import *
 from .process.managers import *
 from .opencv.tasks import *
+import os
 import yaml
 
-main = Main() 
+main = MainManager() 
 
 def addManager(manager):
+
     main.add(manager)  
 
 def applyConfig(configPath):
@@ -13,23 +15,31 @@ def applyConfig(configPath):
         try:
             data = yaml.safe_load(stream)
             for key in data:
-                main.el(key).loadConfig(data[key])
+                main.get(key).loadConfig(data[key])
         except yaml.YAMLError as exc:
             print(exc)
 
 def get(key):
-    return main.el(key)
+    return main.get(key)
 
 
-addManager(Type())
-addManager(Enum())       
-addManager(Function()) 
-addManager(Activity())    
-addManager(Process()) 
+addManager(TypeManager())
+addManager(EnumManager())       
+addManager(TaskManager()) 
+addManager(NodeManager()) 
+addManager(ProcessManager()) 
 
-get('Function').add(CvtColor)
+get('Node').add(StartNode())
+get('Node').add(EndNode())
+get('Node').add(TaskNode())
 
-applyConfig('config/main.yaml')
+get('Task').add(CvtColor())
 
-print(get('Enum').el('ColorConversionCodes').values)
-print(get('Function').el('CvtColor').parameters)
+
+rootpath = os.getcwd()
+applyConfig(os.path.join(rootpath,'cvlab','config/core.yaml'))
+applyConfig(os.path.join(rootpath,'cvlab','config/opencv.yaml'))
+applyConfig(os.path.join(rootpath,'cvlab','config/process.yaml'))
+
+print(get('Enum').get('ColorConversionCodes').values)
+print(get('Task').get('CvtColor').params)

@@ -12,7 +12,7 @@ class Manager:
     def addConfig(self,key,value):
         self.list[key]= value
 
-    def el(self,key):
+    def get(self,key):
         return self.list[key]    
 
     def loadConfig(self,value):
