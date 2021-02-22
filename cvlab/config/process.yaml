@@ -10,7 +10,7 @@ Process:
         type: Task
         task: Cv_ImRead
         params:
-          filename: /home/flavio/develop/opencv-lab/cvlab/data/test.jpg
+          filename: /home/flavio/develop/opencv-lab/cvlab/data/source.jpg
         output: img
         transitions:
           transform:                  
@@ -22,6 +22,18 @@ Process:
           code: 6
         output: gray
         transitions:
-          end:  
+          save: 
+      save:
+        type: Task
+        task: Cv_ImWrite
+        params:
+          filename: /home/flavio/develop/opencv-lab/cvlab/data/target.jpg
+          img: $gray
+        transitions:
+          end:         
       end:
-        node: End   
+        type: End   
+
+
+
+        

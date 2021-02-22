@@ -20,15 +20,11 @@ def applyConfig(configPath):
 main.add(TypeManager())
 main.add(EnumManager())       
 main.add(TaskManager()) 
-# main.add(NodeManager()) 
 main.add(ProcessManager()) 
-
-# get('Node').add(StartNode())
-# get('Node').add(EndNode())
-# get('Node').add(TaskNode())
 
 main.get('Task').add(Cv_CvtColor())
 main.get('Task').add(Cv_ImRead())
+main.get('Task').add(Cv_ImWrite())
 
 
 rootpath = os.getcwd()
@@ -40,4 +36,4 @@ print(main.manager('Enum','Cv_ColorConversionCodes').values)
 print(main.manager('Task','Cv_CvtColor').params)
 
 context = {'vars':{}}
-main.manager('Process','test').start(context)
+main.get('Process').start('test',context)

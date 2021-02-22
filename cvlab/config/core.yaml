@@ -1,13 +1,5 @@
 Type:
   image:
   int:
-  string:
+  str:
   enum:
-
-# Node:
-#   Start:
-#     description: ""      
-#   End:
-#     description: "" 
-#   Task:
-#     description: "" 

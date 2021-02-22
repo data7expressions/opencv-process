@@ -10,15 +10,26 @@ Task:
   Cv_CvtColor:
     description:
     params:
-      source: image
-      code: Enum.Cv_ColorConversionCodes
-    output: image
+      source: 
+        type: image
+      code: 
+        type: Enum.Cv_ColorConversionCodes
+    output: 
+      type: image
   Cv_ImRead:
     description:
     params:
-      filename: string
-    output: image   
-
+      filename: 
+        type: str
+    output:
+      type: image 
+  Cv_ImWrite:
+    description:
+    params:
+      filename: 
+        type: str
+      img: 
+        type: image
 
 
        

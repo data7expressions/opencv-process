@@ -1,4 +1,5 @@
 from .core import *
+import sys
 
 class MainManager(Manager):
     def __init__(self):
@@ -15,9 +16,9 @@ class MainManager(Manager):
         return self.get(type).get(key)
 
     def solveExpression(self,expresion,context):
-        if expresion.startswith('$'):
+        if type(expresion).__name__ == 'str' and expresion.startswith('$'):
             variable=expresion.replace('$','')
-            return context.vars[variable]
+            return context['vars'][variable]
         return expresion
 
     def solveParams(self,params,context):
@@ -48,51 +49,6 @@ class EnumManager(Manager):
 
     def addConfig(self,key,value):
         self.list[key]= Enum(value) 
-
-################################ Process Node
-# class Node():
-#     def __init__(self,spec=None):
-#         self._spec=spec
-
-#     @property    
-#     def spec(self):
-#         return self._spec        
-
-#     @spec.setter    
-#     def spec(self,value):
-#         self._spec=value
-
-# class StartNode(Node):
-#     def __init__(self):
-#         super(StartNode,self).__init__()
-
-# class EndNode(Node):
-#     def __init__(self):
-#         super(EndNode,self).__init__()    
-    
-# class TaskNode(Node):
-#     def __init__(self):
-#         super(TaskNode,self).__init__() 
-
-#     def execute(self,process,node):
-#         taskManager = self._main.manager('Task',node.task)
-#         params = self._main.solveParams(node.params,process.context)
-#         result=taskManager.execute(params)
-#         if node.output!=None:
-#             process.context.vars[node.output]=result  
-
-#         for key in node.transitions:
-#             transition=node.transitions[key]
-            
-         
-
-# class NodeManager(Manager):
-#     def __init__(self):
-#         super(NodeManager,self).__init__() 
-#     def addConfig(self,key,value):
-#         self.list[key].spec =value 
-
-
 
 ################################ Task
 class Task():
@@ -132,71 +88,57 @@ class TaskManager(Manager):
 ################################ Process
 
 class Process:
-    def __init__(self,spec,main,parent):
-        self._spec=spec
+    def __init__(self,main,parent,spec,context):        
         self._main=main
-        self._parent=parent        
+        self._parent=parent
+        self._spec=spec
+        self._context=context         
 
     def node(self,key):
         return self._spec['nodes'][key]    
 
-    def start(self,context):
-        self.execute('start',context)
+    def start(self):
+        self.execute('start')
 
-    def restart(self,context):
-        self.execute(context.current,context)
+    def restart(self):
+        self.execute(self._context.current)
 
-
-
-    def nextNode(self,node,context):
-        next=list(node['transitions'].keys())[0]
-        self.execute(next,context)
-
-    def execute(self,key,context):
+    def execute(self,key):
         node=self.node(key)
         type=node['type'] 
         if type == 'Start':
-            self.nextNode(node,context)
+            self.nextNode(node)
         elif type == 'End':
-            self.executeEnd(node,context)               
+            self.executeEnd(node)               
         elif type == 'Task':
-            self.executeTask(node,context)
-            self.nextNode(node,context)
+            self.executeTask(node)
+            self.nextNode(node)
           
-    def executeEnd(self,node,context):
+    def executeEnd(self,node):
         print('End')
 
-    def executeTask(self,node,context):
-        taskManager = self._main.manager('Task',node['task'])
-        params = self._main.solveParams(node['params'],context)
-        result=taskManager.execute(params)
-        if node['output']!=None:
-            context.vars[node['output']]=result  
+    def executeTask(self,node):
+        try:
+            taskManager = self._main.manager('Task',node['task'])
+            params = self._main.solveParams(node['params'],self._context)
+            result=taskManager.execute(params)
+            if "output" in node:
+                self._context['vars'][node['output']]=result  
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
 
-          
-
-    
-
-# class ProcessInstance:
-#     def __init__(self,spec,context):
-#         self._spec=spec
-#         self._context=context 
-
-#     def start(self):
-#         nodes= self._spec.nodes
-#         node=self._context.current==None if nodes['start'] else nodes[self._context.current]
-#         self.execute(node)    
-
-#     def execute(self,node):
-#         self.current=node
-#         manager=self._main.manager('Node',node.node)
-#         manager.execute(self,node)
-
-   
+    def nextNode(self,node):
+        next=list(node['transitions'].keys())[0]
+        self.execute(next)      
 
 class ProcessManager(Manager):
     def __init__(self):
-        super(ProcessManager,self).__init__()
+        self._instances= []
+        super(ProcessManager,self).__init__()    
 
-    def addConfig(self,key,value):
-        self.list[key]= Process(value,self._main,self)
+    def start(self,key,context):
+        spec=self.list[key]
+        instance=Process(self._main,self,spec,context)
+        self._instances.append(instance)
+        instance.start()
