@@ -4,10 +4,10 @@ Type:
   string:
   enum:
 
-Node:
-  Start:
-    description: ""      
-  End:
-    description: "" 
-  Task:
-    description: "" 
+# Node:
+#   Start:
+#     description: ""      
+#   End:
+#     description: "" 
+#   Task:
+#     description: "" 

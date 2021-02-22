@@ -1,18 +1,23 @@
 
 Enum:
-  ColorConversionCodes:
+  Cv_ColorConversionCodes:
     COLOR_BGR2RGB: 4
     COLOR_BGR2GRAY: 6
     COLOR_RGB2GRAY: 7
     COLOR_BGR2HSV: 40   
 
 Task:
-  CvtColor:
+  Cv_CvtColor:
     description:
     params:
       source: image
-      code: enum.ColorConversionCodes
-    output: image 
+      code: Enum.Cv_ColorConversionCodes
+    output: image
+  Cv_ImRead:
+    description:
+    params:
+      filename: string
+    output: image   
 
 
 

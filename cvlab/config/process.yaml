@@ -2,18 +2,26 @@ Process:
   test:
     params:
     nodes:
-      star:
+      start:
         type: Start
         transitions:
-          a:           
-      a:
+          readImage:
+      readImage:
         type: Task
-        task: CvtColor
+        task: Cv_ImRead
+        params:
+          filename: /home/flavio/develop/opencv-lab/cvlab/data/test.jpg
+        output: img
+        transitions:
+          transform:                  
+      transform:
+        type: Task
+        task: Cv_CvtColor
         params:
           source: $img
-          code: COLOR_BGR2GRAY
+          code: 6
         output: gray
         transitions:
           end:  
       end:
-        type: End   
+        node: End   

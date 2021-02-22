@@ -6,9 +6,6 @@ import yaml
 
 main = MainManager() 
 
-def addManager(manager):
-
-    main.add(manager)  
 
 def applyConfig(configPath):
     with open(configPath, 'r') as stream:
@@ -19,21 +16,19 @@ def applyConfig(configPath):
         except yaml.YAMLError as exc:
             print(exc)
 
-def get(key):
-    return main.get(key)
 
+main.add(TypeManager())
+main.add(EnumManager())       
+main.add(TaskManager()) 
+# main.add(NodeManager()) 
+main.add(ProcessManager()) 
 
-addManager(TypeManager())
-addManager(EnumManager())       
-addManager(TaskManager()) 
-addManager(NodeManager()) 
-addManager(ProcessManager()) 
+# get('Node').add(StartNode())
+# get('Node').add(EndNode())
+# get('Node').add(TaskNode())
 
-get('Node').add(StartNode())
-get('Node').add(EndNode())
-get('Node').add(TaskNode())
-
-get('Task').add(CvtColor())
+main.get('Task').add(Cv_CvtColor())
+main.get('Task').add(Cv_ImRead())
 
 
 rootpath = os.getcwd()
@@ -41,5 +36,8 @@ applyConfig(os.path.join(rootpath,'cvlab','config/core.yaml'))
 applyConfig(os.path.join(rootpath,'cvlab','config/opencv.yaml'))
 applyConfig(os.path.join(rootpath,'cvlab','config/process.yaml'))
 
-print(get('Enum').get('ColorConversionCodes').values)
-print(get('Task').get('CvtColor').params)
+print(main.manager('Enum','Cv_ColorConversionCodes').values)
+print(main.manager('Task','Cv_CvtColor').params)
+
+context = {'vars':{}}
+main.manager('Process','test').start(context)
