@@ -1,0 +1,34 @@
+Enum:
+  Cv_ColorConversion:
+    BGR2RGB: 4
+    BGR2GRAY: 6
+    RGB2GRAY: 7
+    BGR2HSV: 40 
+
+Task:
+  Cv_CvtColor:
+    description:
+    input:
+      source: image
+      code: Enum.Cv_ColorConversion
+    output: image
+  Cv_ImRead:
+    description:
+    input:
+      filename: filePath
+    output: image 
+  Cv_ImWrite:
+    description:
+    input:
+      filename: filePath
+      img: image
+
+
+       
+
+
+
+ 
+
+
+       

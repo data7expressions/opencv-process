@@ -3,6 +3,7 @@ from .ui.main import MainUi
 from tkinter import *
 from .application import *
 from .process.managers import *
+from .test.process import *
 
 
 
@@ -14,4 +15,9 @@ def main():
     application.init()
     base.mainloop()
 
-main()
+def test():
+    mainManager = MainManager() 
+    testProcess = TestProcess(mainManager)
+    testProcess.execute()
+
+test()

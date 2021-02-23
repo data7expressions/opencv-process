@@ -1,39 +1,39 @@
 Process:
   test:
-    params:
+    input:
+      source: filePath
+      target: filePath
+    init:
+      colorConversion: enum.Cv_ColorConversion.BGR2RGB
     nodes:
       start:
         type: Start
-        transitions:
-          readImage:
+        transition: readImage
       readImage:
         type: Task
         task: Cv_ImRead
-        params:
-          filename: /home/flavio/develop/opencv-lab/cvlab/data/source.jpg
+        input:
+          filename: $source
         output: img
-        transitions:
-          transform:                  
+        transition: transform
       transform:
         type: Task
         task: Cv_CvtColor
-        params:
+        input:
           source: $img
-          code: 6
+          code: $colorConversion    
         output: gray
-        transitions:
-          save: 
+        transition: save
       save:
         type: Task
         task: Cv_ImWrite
-        params:
-          filename: /home/flavio/develop/opencv-lab/cvlab/data/target.jpg
+        input:
+          filename: $target
           img: $gray
-        transitions:
-          end:         
+        transition: end
       end:
         type: End   
-
-
-
-        
+    show:
+      source:
+      target:
+      colorConversion:

@@ -25,11 +25,9 @@ class Aplication():
         self.main.get('Task').add(Cv_ImWrite())
 
         rootpath = os.getcwd()
-        self.main.applyConfig(os.path.join(rootpath,'cvlab/process/core.yaml'))
-        self.main.applyConfig(os.path.join(rootpath,'cvlab/opencv/opencv.yaml'))
+        self.main.applyConfig(os.path.join(rootpath,'cvprocess/process/core.yaml'))
+        self.main.applyConfig(os.path.join(rootpath,'cvprocess/opencv/opencv.yaml'))
         self.main.applyConfig(os.path.join(rootpath,'workspace/process.yaml'))
 
-        print(self.main.manager('Enum','Cv_ColorConversionCodes').values)
-        print(self.main.manager('Task','Cv_CvtColor').params)
-        context = {'vars':{}}
-        self.main.get('Process').start('test',context)
+        
+
