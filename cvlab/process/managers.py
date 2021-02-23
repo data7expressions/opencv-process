@@ -1,5 +1,6 @@
 from .core import *
 import sys
+import yaml
 
 class MainManager(Manager):
     def __init__(self):
@@ -26,7 +27,16 @@ class MainManager(Manager):
         for key in params:
             expression = params[key]
             result[key] = self.solveExpression(expression,context) 
-        return result    
+        return result
+
+    def applyConfig(self,configPath):
+        with open(configPath, 'r') as stream:
+            try:
+                data = yaml.safe_load(stream)
+                for key in data:
+                    self.get(key).loadConfig(data[key])
+            except yaml.YAMLError as exc:
+                print(exc)       
 
 ################################ Type
 class TypeManager(Manager):
