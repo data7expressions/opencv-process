@@ -71,22 +71,7 @@ class Task():
 
     @spec.setter    
     def spec(self,value):
-        self._spec=value
-
-    @property    
-    def description(self):
-        return self._spec['description'] 
-
-    @property    
-    def params(self):
-        return self._spec['params'] 
-
-    @property    
-    def output(self):
-        return self._spec['output']
-
-    def execute(self,params):
-        return None       
+        self._spec=value        
 
 class TaskManager(Manager):
     def __init__(self):
@@ -130,8 +115,8 @@ class Process:
     def executeTask(self,node):
         try:
             taskManager = self._main.manager('Task',node['task'])
-            params = self._main.solveParams(node['params'],self._context)
-            result=taskManager.execute(params)
+            input = self._main.solveParams(node['input'],self._context)
+            result=taskManager.execute(**input)
             if "output" in node:
                 self._context['vars'][node['output']]=result  
         except:

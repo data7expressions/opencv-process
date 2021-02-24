@@ -6,18 +6,18 @@ Enum:
     BGR2HSV: 40 
 
 Task:
-  Cv_CvtColor:
+  CvtColor:
     description:
     input:
       source: image
       code: Enum.Cv_ColorConversion
     output: image
-  Cv_ImRead:
+  ImRead:
     description:
     input:
       filename: filePath
     output: image 
-  Cv_ImWrite:
+  ImWrite:
     description:
     input:
       filename: filePath

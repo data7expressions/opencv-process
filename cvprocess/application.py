@@ -20,9 +20,9 @@ class Aplication():
         self.main.add(TaskManager()) 
         self.main.add(ProcessManager()) 
 
-        self.main.get('Task').add(Cv_CvtColor())
-        self.main.get('Task').add(Cv_ImRead())
-        self.main.get('Task').add(Cv_ImWrite())
+        self.main.get('Task').add(CvtColor())
+        self.main.get('Task').add(ImRead())
+        self.main.get('Task').add(ImWrite())
 
         rootpath = os.getcwd()
         self.main.applyConfig(os.path.join(rootpath,'cvprocess/process/core.yaml'))

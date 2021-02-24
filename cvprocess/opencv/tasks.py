@@ -1,21 +1,21 @@
 from ..process.managers import *
 import cv2 as cv
 
-class Cv_CvtColor(Task):
+class CvtColor(Task):
     def __init__(self):
-        super(Cv_CvtColor,self).__init__()
-    def execute(self,params):
-        return cv.cvtColor(params['source'], params['code'])       
+        super(CvtColor,self).__init__()
+    def execute(self,source,code):
+        return cv.cvtColor(source,code)       
 
-class Cv_ImRead(Task):
+class ImRead(Task):
     def __init__(self):
-        super(Cv_ImRead,self).__init__()
-    def execute(self,params):
-        return cv.imread(params['filename']) 
+        super(ImRead,self).__init__()
+    def execute(self,filename):
+        return cv.imread(filename) 
 
-class Cv_ImWrite(Task):
+class ImWrite(Task):
     def __init__(self):
-        super(Cv_ImWrite,self).__init__()
-    def execute(self,params):
-        return cv.imwrite(params['filename'],params['img'])
+        super(ImWrite,self).__init__()
+    def execute(self,filename,img):
+        return cv.imwrite(filename,img)
 
