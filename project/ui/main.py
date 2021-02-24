@@ -5,6 +5,14 @@ from tkinter import messagebox as mb
 import queue as q
 import os
 
+class Aplication():
+    def __init__(self, ui,main):
+        self.ui = ui
+        self.main= main
+
+    def init(self):
+        self.ui.init() 
+        
 class MainUi(ttk.Frame):
     def __init__(self, base,manager):
         self.base= base

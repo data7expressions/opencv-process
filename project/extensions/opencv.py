@@ -1,4 +1,4 @@
-from ..process.managers import *
+from ..core import *
 import cv2 as cv
 
 class CvtColor(Task):

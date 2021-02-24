@@ -4,21 +4,21 @@ Process:
       source: filePath
       target: filePath
     init:
-      colorConversion: enum.Cv_ColorConversion.BGR2RGB
+      colorConversion: enum.ColorConversion.BGR2RGB
     nodes:
       start:
         type: Start
         transition: readImage
       readImage:
         type: Task
-        task: Cv_ImRead
+        task: ImRead
         input:
           filename: $source
         output: img
         transition: transform
       transform:
         type: Task
-        task: Cv_CvtColor
+        task: CvtColor
         input:
           source: $img
           code: $colorConversion    
@@ -26,7 +26,7 @@ Process:
         transition: save
       save:
         type: Task
-        task: Cv_ImWrite
+        task: ImWrite
         input:
           filename: $target
           img: $gray

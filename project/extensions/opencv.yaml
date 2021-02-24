@@ -1,5 +1,5 @@
 Enum:
-  Cv_ColorConversion:
+  ColorConversion:
     BGR2RGB: 4
     BGR2GRAY: 6
     RGB2GRAY: 7
@@ -10,7 +10,7 @@ Task:
     description:
     input:
       source: image
-      code: Enum.Cv_ColorConversion
+      code: Enum.ColorConversion
     output: image
   ImRead:
     description:
