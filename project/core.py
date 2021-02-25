@@ -3,8 +3,7 @@ import yaml
 
 class ChildManager:
 
-    def __init__(self,mgr=None,parent=None):
-        self.list = {}
+    def __init__(self,mgr=None,parent=None):        
         self.mgr=mgr
         self.parent=parent
 
@@ -14,6 +13,7 @@ class ChildManager:
 
 class Manager(ChildManager):
     def __init__(self,mgr=None,parent=None):
+        self.list = {}
         super(Manager,self).__init__(mgr,parent)   
 
     def add(self,value):
@@ -24,15 +24,15 @@ class Manager(ChildManager):
     def addConfig(self,key,value):
         self.list[key]= value
 
-    def __getitem__(self,key):
-        return self.list[key]    
-
     def loadConfig(self,value):
         for key in value:
-            self.addConfig(key,value[key])
+            self.addConfig(key,value[key])    
 
+    def __getitem__(self,key):
+        return self.list[key]  
 
-
+    def list(self):
+        return self.list 
 
 class MainManager(Manager):
     def __init__(self):

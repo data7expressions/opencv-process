@@ -7,7 +7,6 @@ class Process:
         self.spec=spec
         self.context=context 
 
-
     def solveParams(self,params,context):
         return self.mgr['Expression'].solveParams(params,context)            
 
