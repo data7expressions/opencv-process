@@ -8,13 +8,16 @@ from .ui.main import *
 import os
 
 mgr = MainManager() 
+mgr.context={ 'workspace' : (path.join(getcwd(),'data/workspace')) }
 
 def init():
+   # TODO: ver como cargar esto dinamicamente utilizando reflexion
    mgr.add(TypeManager())
    mgr.add(EnumManager())       
    mgr.add(TaskManager()) 
    mgr.add(ProcessManager())
    mgr.add(ExpressionManager()) 
+   mgr.add(UiManager()) 
 
    mgr['Task'].add(CvtColor())
    mgr['Task'].add(ImRead())
@@ -26,15 +29,17 @@ def init():
    mgr.applyConfig(os.path.join(rootpath,'data/workspace/process.yaml'))
 
 def main():
-    base = Tk()
-    mainUi = MainUi(base,mgr)       
-    application = Aplication(mainUi,mgr)
-    application.init()
-    base.mainloop()
+    tk = Tk()
+    mainUI=MainUi(tk)
+    mgr['Ui'].add(mainUI)       
+   
+    mgr['Ui'].init()
+    mgr['Ui']['Main'].init()
+    mainUI.mainloop()
 
 def test():
     TestList(mgr).execute()
     TestProcess(mgr).execute()
 
 init()
-test()
+main()

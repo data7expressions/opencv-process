@@ -1,20 +1,23 @@
 import sys
 import yaml
 
+class Helper:
+    @staticmethod
+    def rreplace(s, old, new, occurrence=1):
+        li = s.rsplit(old, occurrence)
+        return new.join(li)
+
 class ChildManager:
-
-    def __init__(self,mgr=None,parent=None):        
-        self.mgr=mgr
-        self.parent=parent
-
     def set(self,mgr,parent):
         self.mgr=mgr
         self.parent=parent
+        self.context={}
 
 class Manager(ChildManager):
     def __init__(self,mgr=None,parent=None):
         self.list = {}
-        super(Manager,self).__init__(mgr,parent)   
+        self.mgr=mgr
+        self.parent=parent
 
     def add(self,value):
         value.set(self.mgr,self)
@@ -37,12 +40,22 @@ class Manager(ChildManager):
 class MainManager(Manager):
     def __init__(self):
         self.mgr = self
+        self._context={}
         super(MainManager,self).__init__()
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self,value):
+        self._context=value
+
 
     def add(self,value):
         value.set(self,self)
-        key=type(value).__name__.replace('Manager','')
-        self.list[key]= value 
+        key=Helper.rreplace(type(value).__name__, 'Manager', '')  
+        self.list[key]= value       
 
     def get(self,type,key):
         return self[type][key]  
@@ -77,12 +90,11 @@ class ExpressionManager(Manager):
             expression = params[key]
             result[key] = self.solve(expression,context) 
         return result                       
-# Type -------------------------------------
+
 class TypeManager(Manager):
     def __init__(self):
         super(TypeManager,self).__init__()
-      
-# Enum -------------------------------------
+
 class Enum():
     def __init__(self,values):
         self.values =values
@@ -100,12 +112,8 @@ class EnumManager(Manager):
     def addConfig(self,key,value):
         self.list[key]= Enum(value) 
 
-# Task -------------------------------------
 class Task(ChildManager):
-    def __init__(self,spec=None,mgr=None,parent=None):
-        self.spec=spec
-        super(Task,self).__init__(mgr,parent)
-  
+ 
     def setSpec(self,value):
         self.spec=value
 
@@ -122,5 +130,6 @@ class TaskManager(Manager):
 
     def addConfig(self,key,value):
         self.list[key].setSpec(value)    
-    
+
+
 
