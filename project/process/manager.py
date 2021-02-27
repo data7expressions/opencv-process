@@ -1,5 +1,42 @@
-from .core import *
+# from ..core import *
+import yaml
+import sys
 
+#TODO: se debe importar esta clase desde un paquete
+class Helper:
+    @staticmethod
+    def rreplace(s, old, new, occurrence=1):
+        li = s.rsplit(old, occurrence)
+        return new.join(li)
+class Manager():
+    def __init__(self,mgr):
+        self.list = {}
+        self.mgr=mgr
+        self.type = Helper.rreplace(type(self).__name__, 'Manager', '') 
+
+    def add(self,type):
+        key = Helper.rreplace(type.__name__,self.type , '')        
+        self.list[key]= type(self.mgr)  
+
+    def addConfig(self,key,value):
+        self.list[key]= value
+
+    def applyConfig(self,configPath):
+        with open(configPath, 'r') as stream:
+            try:
+                data = yaml.safe_load(stream)
+                for key in data:
+                    self.addConfig(key,data[key]) 
+            except yaml.YAMLError as exc:
+                print(exc)         
+
+    def __getitem__(self,key):
+        return self.list[key]  
+
+    def list(self):
+        return self.list 
+
+ 
 class Process:
     def __init__(self,mgr,parent,spec,context):        
         self.mgr=mgr
@@ -18,9 +55,9 @@ class Process:
         self.execute('start')
 
     def init(self):
-       if 'init' in self.spec:
-           vars = self.solveParams(self.spec['init'],self.context)
-           for k in vars:
+        if 'init' in self.spec:
+            vars = self.solveParams(self.spec['init'],self.context)
+            for k in vars:
                 self.context['vars'][k]=vars[k] 
 
     def restart(self):
@@ -36,7 +73,7 @@ class Process:
         elif type == 'Task':
             self.executeTask(node)
             self.nextNode(node)
-          
+        
     def executeEnd(self,node):
         print('End')
 
@@ -59,7 +96,7 @@ class Process:
             for p in transition:self.execute(p) 
         elif type(transition) is dict: 
             for k in transition:self.execute(transition[k])
-
+    
 class ProcessManager(Manager):
     def __init__(self,mgr):
         self._instances= []
@@ -70,3 +107,5 @@ class ProcessManager(Manager):
         instance=Process(self.mgr,self,spec,context)
         self._instances.append(instance)
         instance.start()
+    
+   

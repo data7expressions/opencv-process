@@ -1,13 +1,11 @@
-from ..core import *
-
-class TestList():
+class ListTest():
     def __init__(self,mgr):
         self.mgr= mgr    
     def execute(self):
         print(self.mgr.get('Enum','ColorConversion').values)
         print(self.mgr.get('Task','CvtColor').input)
 
-class TestProcess():
+class ProcessTest():
     def __init__(self,mgr):
         self.mgr= mgr    
     def execute(self):

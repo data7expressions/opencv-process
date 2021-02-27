@@ -7,34 +7,9 @@ from os import path,getcwd,listdir
 from PIL import ImageTk, Image
 
 
+# from ..core import *
 
-from ..core import *
 
-class UiManager(Manager):
-    def __init__(self,mgr):
-        super(UiManager,self).__init__(mgr)
-        self.icons = {}
-
-    def new(self,key,args):
-        return self.list[key](*args)
-
-    def add(self,value):
-        key=Helper.rreplace(value.__name__, 'Ui', '')
-        self.list[key]= value 
-
-    def init(self):
-        self.loadIcons()
-
-    def loadIcons(self):
-        iconsPath=path.join(getcwd(),'project/assets/icons')
-        for item in listdir(iconsPath):
-            name=path.splitext(path.basename(item))[0]
-            self.icons[name] = tk.PhotoImage(file=path.join(iconsPath,item))  
-
-    def getIcon(self,key):
-        key = key.replace('.','')
-        if key not in self.icons: key = '_blank'
-        return self.icons[key.replace('.','')]
 
 
 class MainUi(ttk.Frame):

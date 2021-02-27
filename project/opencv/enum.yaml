@@ -1,0 +1,16 @@
+Enum:
+  ColorConversion:
+    BGR2RGB: 4
+    BGR2GRAY: 6
+    RGB2GRAY: 7
+    BGR2HSV: 40 
+
+
+       
+
+
+
+ 
+
+
+       
