@@ -61,9 +61,9 @@ class Process:
             for k in transition:self.execute(transition[k])
 
 class ProcessManager(Manager):
-    def __init__(self):        
+    def __init__(self,mgr):
         self._instances= []
-        super(ProcessManager,self).__init__()    
+        super(ProcessManager,self).__init__(mgr)    
 
     def start(self,key,context):
         spec=self.list[key]

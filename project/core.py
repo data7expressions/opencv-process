@@ -7,22 +7,19 @@ class Helper:
         li = s.rsplit(old, occurrence)
         return new.join(li)
 
-class ChildManager:
-    def set(self,mgr,parent):
-        self.mgr=mgr
-        self.parent=parent
-        self.context={}
+# class ChildManager:
+#     def set(self,mgr):
+#         self.mgr=mgr
+#         self.context={}
 
-class Manager(ChildManager):
-    def __init__(self,mgr=None,parent=None):
+class Manager():
+    def __init__(self,mgr):
         self.list = {}
         self.mgr=mgr
-        self.parent=parent
 
-    def add(self,value):
-        value.set(self.mgr,self)
-        key=type(value).__name__
-        self.list[key]= value    
+    def add(self,type):        
+        self.list[type.__name__]= type(self.mgr)  
+          
 
     def addConfig(self,key,value):
         self.list[key]= value
@@ -39,9 +36,8 @@ class Manager(ChildManager):
 
 class MainManager(Manager):
     def __init__(self):
-        self.mgr = self
         self._context={}
-        super(MainManager,self).__init__()
+        super(MainManager,self).__init__(self)
 
     @property
     def context(self):
@@ -52,10 +48,9 @@ class MainManager(Manager):
         self._context=value
 
 
-    def add(self,value):
-        value.set(self,self)
-        key=Helper.rreplace(type(value).__name__, 'Manager', '')  
-        self.list[key]= value       
+    def add(self,type):
+        key = Helper.rreplace(type.__name__, 'Manager', '')   
+        self.list[key]= type(self)       
 
     def get(self,type,key):
         return self[type][key]  
@@ -70,8 +65,8 @@ class MainManager(Manager):
                 print(exc) 
 
 class ExpressionManager(Manager):
-    def __init__(self):
-        super(ExpressionManager,self).__init__()
+    def __init__(self,mgr):
+        super(ExpressionManager,self).__init__(mgr)
 
     def solve(self,expresion,context):
         if type(expresion) is str: 
@@ -92,8 +87,8 @@ class ExpressionManager(Manager):
         return result                       
 
 class TypeManager(Manager):
-    def __init__(self):
-        super(TypeManager,self).__init__()
+    def __init__(self,mgr):
+        super(TypeManager,self).__init__(mgr)
 
 class Enum():
     def __init__(self,values):
@@ -106,13 +101,15 @@ class Enum():
         return self.values[key]
 
 class EnumManager(Manager):
-    def __init__(self):
-        super(EnumManager,self).__init__()
+    def __init__(self,mgr):
+        super(EnumManager,self).__init__(mgr)
 
     def addConfig(self,key,value):
         self.list[key]= Enum(value) 
 
-class Task(ChildManager):
+class Task():
+    def __init__(self,mgr):
+        self.mgr=mgr
  
     def setSpec(self,value):
         self.spec=value
@@ -125,8 +122,8 @@ class Task(ChildManager):
         return self.spec['output']                
 
 class TaskManager(Manager):
-    def __init__(self):
-        super(TaskManager,self).__init__()
+    def __init__(self,mgr):
+        super(TaskManager,self).__init__(mgr)
 
     def addConfig(self,key,value):
         self.list[key].setSpec(value)    
