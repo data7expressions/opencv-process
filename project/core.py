@@ -71,25 +71,21 @@ class MainManager(Manager):
             except yaml.YAMLError as exc:
                 print(exc)               
 
-    def loadPlugins(self,rootPath):
-        files= glob.glob(path.join(rootPath,'**/__plugin__.py'),recursive=True)
-        """Load all modules of plugins on rootPath"""
+    def loadPlugin(self,pluginPath):
+        
+        """Load all modules of plugins on pluginPath"""
         modules=[]
-        pluginsPath=[]
-        for file in files:
-            pluginPath = path.dirname(file)
-            pluginsPath.append(pluginPath)
-            list = glob.glob(path.join(pluginPath,'**/*.py'),recursive=True)
-            for item in list:
-                modulePath= path.join(pluginPath,item)
-                file= path.basename(item)
-                filename, fileExtension = path.splitext(file)
-                if not filename.startswith('_'):
-                    name = modulePath.replace('/','_')   
-                    spec = importlib.util.spec_from_file_location(name, modulePath)   
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    modules.append(module)
+        list = glob.glob(path.join(pluginPath,'**/*.py'),recursive=True)
+        for item in list:
+            modulePath= path.join(pluginPath,item)
+            file= path.basename(item)
+            filename, fileExtension = path.splitext(file)
+            if not filename.startswith('_'):
+                name = modulePath.replace('/','_')   
+                spec = importlib.util.spec_from_file_location(name, modulePath)   
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                modules.append(module)
         """Load all managers on modules loaded"""
         for module in modules:
             self.loadTypes('Manager',module)
@@ -97,8 +93,11 @@ class MainManager(Manager):
         for module in modules:
             for key in self.list.keys():
                 self.loadTypes(key,module)
-        """Load all configurations"""
-                  
+        """Load all configurations"""        
+        list = glob.glob(path.join(pluginPath,'**/*.y*ml'),recursive=True)
+        for item in list:
+            self.applyConfig(path.join(pluginPath,item))                  
+                 
              
     def loadTypes(self,key,module):
         for element_name in dir(module):
