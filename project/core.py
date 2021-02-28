@@ -1,10 +1,12 @@
-import sys
 import yaml
-from os import path,getcwd,listdir
-import tkinter as tk
+from os import path
 import glob
 import importlib.util
 import inspect
+import sys
+from enum import Enum
+import tkinter as tk
+from os import path,listdir
 
 class Helper:
     @staticmethod
@@ -12,28 +14,24 @@ class Helper:
         li = s.rsplit(old, occurrence)
         return new.join(li)
 
-
 class Manager():
     def __init__(self,mgr):
         self.list = {}
         self.mgr=mgr
         self.type = Helper.rreplace(type(self).__name__, 'Manager', '') 
 
-    def add(self,type):
-        key = Helper.rreplace(type.__name__,self.type , '')        
-        self.list[key]= type(self.mgr)  
+    def add(self,value):
+        key = Helper.rreplace(value.__name__,self.type , '')  
+        self.list[key]= value(self.mgr)
 
     def addConfig(self,key,value):
         self.list[key]= value
 
     def __getitem__(self,key):
-        return self.list[key]  
+        return self.list[key]
 
     def list(self):
         return self.list 
-
-       
-    
 
 class MainManager(Manager):
     def __init__(self):
@@ -47,10 +45,7 @@ class MainManager(Manager):
     @context.setter
     def context(self,value):
         self._context=value    
-
-    def get(self,type,key):
-        return self[type][key] 
-
+    
     def __getitem__(self,key):
         _key=key
         if _key=='Manager': return self
@@ -117,7 +112,7 @@ class ExpressionManager(Manager):
                 return context['vars'][variable]
             elif expresion.startswith('enum.'):
                 arr=expresion.replace('enum.','').split('.')
-                return self.mgr.get('Enum',arr[0]).value(arr[1])
+                return self.mgr['Enum'][arr[0]].value(arr[1])
                    
         return expresion
 
@@ -174,25 +169,101 @@ class TestManager(Manager):
     def __init__(self,mgr):
         super(TestManager,self).__init__(mgr)     
 
+class Process:
+    def __init__(self,mgr,parent,spec,context):        
+        self.mgr=mgr
+        self.parent=parent
+        self.spec=spec
+        self.context=context 
+
+    def solveParams(self,params,context):
+        return self.mgr['Expression'].solveParams(params,context)            
+
+    def node(self,key):
+        return self.spec['nodes'][key]    
+
+    def start(self):
+        self.init()
+        self.execute('start')
+
+    def init(self):
+        if 'init' in self.spec:
+            vars = self.solveParams(self.spec['init'],self.context)
+            for k in vars:
+                self.context['vars'][k]=vars[k] 
+
+    def restart(self):
+        self.execute(self.context.current)
+
+    def execute(self,key):
+        node=self.node(key)
+        type=node['type'] 
+        if type == 'Start':
+            self.nextNode(node)
+        elif type == 'End':
+            self.executeEnd(node)               
+        elif type == 'Task':
+            self.executeTask(node)
+            self.nextNode(node)
+        
+    def executeEnd(self,node):
+        print('End')
+
+    def executeTask(self,node):
+        try:
+            taskManager = self.mgr['Task'][node['task']]
+            input = self.solveParams(node['input'],self.context)
+            result=taskManager.execute(**input)
+            if 'output' in node:
+                self.context['vars'][node['output']]=result  
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
+
+    def nextNode(self,node):
+        if 'transition' not in node: return        
+        transition = node['transition']        
+        if type(transition) is str:self.execute(transition) 
+        elif type(transition) is list: 
+            for p in transition:self.execute(p) 
+        elif type(transition) is dict: 
+            for k in transition:self.execute(transition[k])
+    
+class ProcessManager(Manager):
+    def __init__(self,mgr):
+        self._instances= []
+        super(ProcessManager,self).__init__(mgr)    
+
+    def start(self,key,context):
+        spec=self.list[key]
+        instance=Process(self.mgr,self,spec,context)
+        self._instances.append(instance)
+        instance.start()
+    
 class UiManager(Manager):
     def __init__(self,mgr):
         super(UiManager,self).__init__(mgr)
-        self.icons = {}
 
-    def new(self,key,args):
-        return self.list[key](*args)
+    def add(self,value):
+        key = Helper.rreplace(value.__name__,self.type , '')  
+        self.list[key]= value     
 
-    def init(self):
-        self.loadIcons()
+    def createSingleton(self,key,args={}):
+        value=self.list[key]
+        if type(value).__name__ != 'type':
+            return value
 
-    def loadIcons(self):
-        iconsPath=path.join(getcwd(),'project/assets/icons')
-        for item in listdir(iconsPath):
-            name=path.splitext(path.basename(item))[0]
-            self.icons[name] = tk.PhotoImage(file=path.join(iconsPath,item))  
+        args['mgr']=self.mgr
+        instance=value(**args)
+        self.list[key]= instance
+        return instance
 
-    def getIcon(self,key):
-        key = key.replace('.','')
-        if key not in self.icons: key = '_blank'
-        return self.icons[key.replace('.','')]
-
+    def create(self,key,args={}):
+        value=self.list[key]
+        _class=None
+        if type(value).__name__ == 'type':
+            _class=value
+        else:
+            _class=type(value)
+        args['mgr']=self.mgr
+        return _class(**args) 

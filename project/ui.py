@@ -5,70 +5,78 @@ from tkinter import messagebox as mb
 import queue as q
 from os import path,getcwd,listdir
 from PIL import ImageTk, Image
-
-
-# from ..core import *
-
-
-
+from .core import *
 
 class MainUi(ttk.Frame):
-    def __init__(self, tk,mgr):
-        super().__init__(tk)
-        self.mgr=mgr
-        self.tk= tk
-
-    def getIcon(self,icon):
-        return self.mgr['Ui'].getIcon(icon)     
+    def __init__(self,master,mgr): 
+        super(MainUi,self).__init__(master)
+        self.mgr= mgr
+        self.icons = {}
         
+    
+    def loadIcons(self,iconsPath):
+        for item in listdir(iconsPath):
+            name=path.splitext(path.basename(item))[0]
+            self.icons[name] = tk.PhotoImage(file=path.join(iconsPath,item))  
 
-    def init(self):
-        self.layout()
-        self.tree_init()
-        self.toolbar_init()
-        #self.open() 
-      
-
-    def layout(self):
-        name=path.basename(self.mgr.context['workspace'])
-        self.tk.title(name)
-        # self.tk.attributes('-fullscreen', True)
-        pad=3
-        self.tk.geometry("{0}x{1}+0+0".format(self.tk.winfo_screenwidth()-pad, self.tk.winfo_screenheight()-pad))
-        self.tk.geometry('1024x768') 
-        self.menu=tk.Menu(self.tk)
-        # self.menu.pack(side=tk.TOP, fill=tk.BOTH)
-        self.footer=ttk.Button(self.tk, text="footer")
-        self.footer.pack(side=tk.BOTTOM, fill=tk.BOTH)
+    def getIcon(self,key):
+        key = key.replace('.','')
+        if key not in self.icons: key = '_blank'
+        return self.icons[key.replace('.','')]         
+  
+    def init(self,iconsPath):
+        self.loadIcons(iconsPath)
+        self.menu=tk.Menu(self.master)
+        self.master.config(menu=self.menu)
+        self.footer=ttk.Button(self.master, text="footer")
         self.tree = ttk.Treeview(self)
-        self.tree.pack(side=tk.LEFT)
-        self.tabs = ttk.Notebook(self.tk)
-        self.tabs.pack(side=tk.RIGHT)
-        self.tk.config(menu=self.menu)
-        self.pack()    
-
-        # seguir ejemplo
-        #https://recursospython.com/guias-y-manuales/vista-de-arbol-treeview-en-tkinter/r
-
-
-    def toolbar_init(self):
+        self.tabs = ttk.Notebook(self.master)        
+        self.toolbar_init()
         
+
+    def toolbar_init(self):        
         self.menu.add_command(label="Open",image=self.getIcon('document-open'),command=self.onOpen)       
         self.menu.add_command(label="Close", image=self.getIcon('document-close'),command=self.onClose)
         # self.menu.add_cascade(label="File", menu=self.fileMenu)
         # self.menu.add(label="Save", menu=self.fileMenu)
-        # toolbar = tk.Frame(self.tk, bd=1, relief=tk.RAISED)
-    
-    def onOpen(self):
-        row_id = self.tree.focus()
-        name=path.basename(row_id)
-        f1 = self.mgr['Ui'].new('Image',(self.tabs,self.mgr))  
-        self.tabs.add(f1, text= name)
-        self.tabs.bind("<Button-1>", self.tab_switch)
-        self.tabs.pack(expand = 1, fill ="both")
-        f1.init(row_id) 
-        print(row_id)
+        # toolbar = tk.Frame(self.master, bd=1, relief=tk.RAISED)      
+  
+    def layout(self):
+         # self.master.attributes('-fullscreen', True)
+        pad=3
+        self.master.geometry("{0}x{1}+0+0".format(self.master.winfo_screenwidth()-pad, self.master.winfo_screenheight()-pad))
+        self.master.geometry('1024x768') 
+        self.footer.pack(side=tk.BOTTOM, fill=tk.BOTH)
+        self.tree.pack(side=tk.LEFT)
+        self.tabs.pack(side=tk.RIGHT)
+        self.pack()         
 
+        # seguir ejemplo
+        #https://recursospython.com/guias-y-manuales/vista-de-arbol-treeview-en-tkinter/r
+
+    def set(self,workspacePath):
+        name=path.basename(workspacePath)
+        self.master.title(name)
+        self.tree_load(workspacePath)
+        
+
+   
+
+
+    def onOpen(self):
+        fullpath = self.tree.focus()
+        name=path.basename(fullpath) 
+
+        s=self.tabs.select()
+        if s == None:
+            frame = self.mgr['Ui'].create('Container',{'master':self.master})
+            self.tabs.add(frame, text= name) 
+            self.tabs.bind("<Button-1>", self.tab_switch)
+            self.tabs.pack(expand = 1, fill ="both")
+            frame.set(fullpath) 
+        else:
+            index=self.tabs.index(s)
+        
     def onClose(self):
         row_id = self.tree.focus()
         print(row_id)
@@ -77,9 +85,6 @@ class MainUi(ttk.Frame):
         pass
         # index = event.widget.index("@%d,%d" % (event.x, event.y))
         # title = event.widget.tab(index, "text")
-
-    def tree_init(self):
-        self.tree_load(self.mgr.context['workspace'])
 
     def tree_load(self, _path, parent=""):
         for item in listdir(_path):            
@@ -108,14 +113,45 @@ class MainUi(ttk.Frame):
     #     title = event.widget.tab(index, "text")
 
 
+class ContainerUi(ttk.Frame):
+    def __init__(self, master,mgr):
+        super(ImageUi,self).__init__(master)
+        self.mgr=mgr
+        self.frames = {}        
+        
+    def init(self):
+        pass
+
+    def layout(self):
+        self.pack() 
+
+    def getFrame(self,key):        
+        if key in self.frames:
+            return self.frames[key] 
+        frame = self.mgr['Ui'].create(key,{'master':self.master})
+        frame.init()
+        frame.layout()
+        self.frames[key] = frame
+        return frame      
+
+    def set(self,fullpath):
+        key= 'Image'
+        frame=self.getFrame(key) 
+        frame.set(fullpath) 
+        print(fullpath)        
 
 class ImageUi(ttk.Frame):
     def __init__(self, master,mgr):
-        ttk.Frame.__init__(self, master)
+        super(ImageUi,self).__init__(master)
         self.mgr=mgr        
-        self.pack()
+        
+    def init(self):
+        pass
 
-    def init(self,fullpath):
+    def layout(self):
+        self.pack()   
+
+    def set(self,fullpath):
         load = Image.open(fullpath)
         load = load.resize((640,480), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(load)        
