@@ -12,6 +12,7 @@ class MainUi(ttk.Frame):
         super(MainUi,self).__init__(master)
         self.mgr= mgr
         self.icons = {}
+        self.frames= {}
         
     
     def loadIcons(self,iconsPath):
@@ -61,21 +62,31 @@ class MainUi(ttk.Frame):
         
 
    
+    def getCurrent(self):
+        frame=None
+        tabIndex=None
+        s=self.tabs.select()
+        if s == '':
+            frame = self.mgr['Ui'].create('Container',{'master':self.master})
+            self.tabs.add(frame) 
+            self.tabs.bind("<Button-1>", self.tab_switch)
+            self.tabs.pack(expand = 1, fill ="both")
+            tabIndex=self.tabs.index(self.tabs.select())
+            self.frames[tabIndex] =  frame
+        else:
+            tabIndex=self.tabs.index(s)
+            frame = self.frames[tabIndex]
 
+        return frame ,tabIndex   
 
     def onOpen(self):
         fullpath = self.tree.focus()
-        name=path.basename(fullpath) 
+        name=path.basename(fullpath)
+        frame ,tabIndex = self.getCurrent()
+        frame.set(fullpath)
+        self.tabs.tab(tabIndex, text=name) 
 
-        s=self.tabs.select()
-        if s == None:
-            frame = self.mgr['Ui'].create('Container',{'master':self.master})
-            self.tabs.add(frame, text= name) 
-            self.tabs.bind("<Button-1>", self.tab_switch)
-            self.tabs.pack(expand = 1, fill ="both")
-            frame.set(fullpath) 
-        else:
-            index=self.tabs.index(s)
+        
         
     def onClose(self):
         row_id = self.tree.focus()
@@ -115,7 +126,7 @@ class MainUi(ttk.Frame):
 
 class ContainerUi(ttk.Frame):
     def __init__(self, master,mgr):
-        super(ImageUi,self).__init__(master)
+        super(ContainerUi,self).__init__(master)
         self.mgr=mgr
         self.frames = {}        
         
@@ -125,25 +136,57 @@ class ContainerUi(ttk.Frame):
     def layout(self):
         self.pack() 
 
-    def getFrame(self,key):        
+    def getFrame(self,fullpath):
+
+        file= path.basename(fullpath)
+        filename, fileExtension = path.splitext(file)
+        fileExtension = fileExtension.replace('.','')
+        key=None
+        for key in self.mgr['Config']['Ui']:
+           extensions= self.mgr['Config']['Ui'][key]['extensions']
+           if fileExtension in extensions:
+               break
+        if key == None: key = 'Editor'
+        
         if key in self.frames:
             return self.frames[key] 
-        frame = self.mgr['Ui'].create(key,{'master':self.master})
+        frame = self.mgr['Ui'].create(key,{'master':self})
         frame.init()
         frame.layout()
         self.frames[key] = frame
         return frame      
 
     def set(self,fullpath):
-        key= 'Image'
-        frame=self.getFrame(key) 
+        frame=self.getFrame(fullpath) 
         frame.set(fullpath) 
         print(fullpath)        
 
 class ImageUi(ttk.Frame):
     def __init__(self, master,mgr):
         super(ImageUi,self).__init__(master)
-        self.mgr=mgr        
+        self.mgr=mgr 
+        self.panel=None       
+        
+    def init(self):
+        self.panel = tk.Label(self)
+
+    def layout(self):
+        self.pack()   
+
+    def set(self,fullpath):
+        load = Image.open(fullpath)
+        load = load.resize((640,480), Image.ANTIALIAS)
+        img = ImageTk.PhotoImage(load)
+        self.panel.configure(image=img)    
+        self.panel.image = img
+        self.panel.place(x=0, y=0)
+        self.panel.pack(expand = 1, fill ="both")  
+
+class ProcessUi(ttk.Frame):
+    def __init__(self, master,mgr):
+        super(ProcessUi,self).__init__(master)
+        self.mgr=mgr 
+        self.panel=None       
         
     def init(self):
         pass
@@ -152,11 +195,41 @@ class ImageUi(ttk.Frame):
         self.pack()   
 
     def set(self,fullpath):
-        load = Image.open(fullpath)
-        load = load.resize((640,480), Image.ANTIALIAS)
-        img = ImageTk.PhotoImage(load)        
-        panel = tk.Label(self, image=img)
-        panel.image = img
-        panel.place(x=0, y=0)
-        panel.pack(expand = 1, fill ="both")      
+        pass
 
+from pygments import lex
+from pygments.lexers import PythonLexer,YamlLexer
+
+class EditorUi(ttk.Frame):
+    def __init__(self, master,mgr):
+        super(EditorUi,self).__init__(master)
+        self.mgr=mgr 
+        self.editor=None       
+        
+    def init(self):
+        self.editor = tk.Text(self)
+        self.editor.mark_set("range_start", "1.0")
+
+    def layout(self):
+        self.pack()
+        self.editor.pack()   
+
+    def set(self,fullpath):
+        file = open(fullpath, "r")
+        data=file.read()
+
+        for token, content in lex(data, PythonLexer()):
+            self.editor.mark_set("range_end", "range_start + %dc" % len(content))
+            self.editor.tag_add(str(token), "range_start", "range_end")
+            self.editor.mark_set("range_start", "range_end")
+
+        # for token, content in lex(data, YamlLexer()):
+        #     self.editor.mark_set("range_end", "range_start + %dc" %len(content))
+        #     self.editor.tag_add(str(token), "range_start", "range_end")
+        #     self.editor.mark_set("range_start", "range_end")
+            # self.editor.tag_configure("Token.Text", foreground="black")
+            # self.editor.tag_configure("Token.Literal.String.Single", foreground="red")
+            # self.editor.tag_configure("Token.Literal.String.Double", foreground="green")
+            # self.editor.tag_configure("Token.Literal.String.Doc", foreground="blue")
+
+        

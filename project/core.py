@@ -144,19 +144,12 @@ class EnumManager(Manager):
     def addConfig(self,key,value):
         self.list[key]= Enum(value) 
 
-class Task():
+class ConfigManager(Manager):
     def __init__(self,mgr):
-        self.mgr=mgr
- 
-    def setSpec(self,value):
-        self.spec=value
+        super(ConfigManager,self).__init__(mgr)
 
-    @property
-    def input(self):
-        return self.spec['input'] 
-    @property
-    def output(self):
-        return self.spec['output']                
+    def addConfig(self,key,value):
+        self.list[key]= value 
 
 class TaskManager(Manager):
     def __init__(self,mgr):

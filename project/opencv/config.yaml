@@ -4,24 +4,33 @@ Enum:
     BGR2GRAY: 6
     RGB2GRAY: 7
     BGR2HSV: 40 
+
+Config:
+  Ui:
+    Image:
+      extensions: [jpg,png,gif]
+    Editor:
+      extensions: [ypml]  
+  Task:
+    CvtColor:
+      description:
+      input:
+        source: image
+        code: Enum.ColorConversion
+      output: image
+    ImRead:
+      description:
+      input:
+        filename: filePath
+      output: image 
+    ImWrite:
+      description:
+      input:
+        filename: filePath
+        img: image
+
     
-Task:
-  CvtColor:
-    description:
-    input:
-      source: image
-      code: Enum.ColorConversion
-    output: image
-  ImRead:
-    description:
-    input:
-      filename: filePath
-    output: image 
-  ImWrite:
-    description:
-    input:
-      filename: filePath
-      img: image
+
 
 
        

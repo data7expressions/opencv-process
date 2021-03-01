@@ -12,7 +12,8 @@ mgr.context={ 'workspace' : (path.join(getcwd(),'data/workspace')) }
 def init():
    
    mgr.add(TypeManager)
-   mgr.add(EnumManager)       
+   mgr.add(EnumManager)
+   mgr.add(ConfigManager)        
    mgr.add(TaskManager) 
    mgr.add(ExpressionManager) 
    mgr.add(ProcessManager) 
@@ -29,6 +30,9 @@ def init():
 def ui():
     mgr['Ui'].add(MainUi)
     mgr['Ui'].add(ImageUi)
+    mgr['Ui'].add(ContainerUi) 
+    mgr['Ui'].add(ProcessUi) 
+    mgr['Ui'].add(EditorUi)    
    
     mgr['Ui'].createSingleton('Main',{'master':Tk()})
     mgr['Ui']['Main'].init(path.join(getcwd(),'project/assets/icons'))
