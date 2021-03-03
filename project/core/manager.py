@@ -7,12 +7,9 @@ import sys
 from enum import Enum
 import tkinter as tk
 from os import path,listdir
+from .base import *
 
-class Helper:
-    @staticmethod
-    def rreplace(s, old, new, occurrence=1):
-        li = s.rsplit(old, occurrence)
-        return new.join(li)
+
 
 class Manager():
     def __init__(self,mgr):
@@ -37,6 +34,29 @@ class MainManager(Manager):
     def __init__(self):
         self._context={}
         super(MainManager,self).__init__(self)
+        self.iconProvider=None
+
+    def init(self,plugins=[]):
+        
+        self.add(TypeManager)
+        self.add(EnumManager)
+        self.add(ConfigManager)        
+        self.add(TaskManager) 
+        self.add(ExpressionManager) 
+        self.add(ProcessManager) 
+        self.add(TestManager)
+        self.add(HelperManager)
+        self.add(UiManager)
+
+        for p in plugins:
+            self.loadPlugin(p)
+
+    def addIconProvider(self,provider):
+        self.iconProvider=provider
+
+    def getIcon(self,key):
+        if self.iconProvider is None: return None
+        return self.iconProvider.getIcon(key) 
 
     @property
     def context(self):
@@ -92,14 +112,15 @@ class MainManager(Manager):
         list = glob.glob(path.join(pluginPath,'**/*.y*ml'),recursive=True)
         for item in list:
             self.applyConfig(path.join(pluginPath,item))                  
-                 
-             
+            
     def loadTypes(self,key,module):
         for element_name in dir(module):
             if element_name.endswith(key) and element_name != key:
                 element = getattr(module, element_name)
                 if inspect.isclass(element):
                     self[key].add(element) 
+    
+  
 
 class ExpressionManager(Manager):
     def __init__(self,mgr):
@@ -161,6 +182,14 @@ class TaskManager(Manager):
 class TestManager(Manager):
     def __init__(self,mgr):
         super(TestManager,self).__init__(mgr)     
+
+class HelperManager(Manager):
+    def __init__(self,mgr):
+        super(HelperManager,self).__init__(mgr)  
+
+    def add(self,value):
+        key = Helper.rreplace(value.__name__,self.type , '')  
+        self.list[key]= value       
 
 class Process:
     def __init__(self,mgr,parent,spec,context):        
@@ -241,7 +270,7 @@ class UiManager(Manager):
         key = Helper.rreplace(value.__name__,self.type , '')  
         self.list[key]= value     
 
-    def createSingleton(self,key,args={}):
+    def singleton(self,key,args={}):
         value=self.list[key]
         if type(value).__name__ != 'type':
             return value
@@ -251,7 +280,7 @@ class UiManager(Manager):
         self.list[key]= instance
         return instance
 
-    def create(self,key,args={}):
+    def new(self,key,args={}):
         value=self.list[key]
         _class=None
         if type(value).__name__ == 'type':

@@ -4,13 +4,7 @@ Enum:
     BGR2GRAY: 6
     RGB2GRAY: 7
     BGR2HSV: 40 
-
 Config:
-  Ui:
-    Image:
-      extensions: [jpg,png,gif]
-    Editor:
-      extensions: [ypml]  
   Task:
     CvtColor:
       description:

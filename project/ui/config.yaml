@@ -1,0 +1,11 @@
+
+Config:
+  Ui:
+    Image:
+      extensions: [jpg,png,gif]
+    Editor:
+      extensions: [ypml]
+    Main:
+      Command:
+        new:
+        open:  
