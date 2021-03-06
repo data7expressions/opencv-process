@@ -3,8 +3,11 @@ Config:
   Ui:
     Image:
       extensions: [jpg,png,gif]
+    Process:
+      #la idea es usar la extension ypml 
+      extensions: [yml]  
     Editor:
-      extensions: [ypml]
+      extensions: [yaml]
     Main:
       Command:
         new:

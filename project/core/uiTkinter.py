@@ -80,7 +80,7 @@ class ToolbarPanel(ttk.Frame):
 
     def add(self,command,img=None,tootip=None):
         icon = self.mgr.getIcon(Helper.nvl(img,command))
-        btn = ttk.Button(self, image=icon, command=  lambda: self.raiseCommand(command) )
+        btn = ttk.Button(self, image=icon, command=  lambda: self.raiseCommand({'command':command}) )
         btn.image = icon
         btn.pack(side=tk.LEFT)
         self.createToolTip(btn,Helper.nvl(tootip,command))
@@ -95,8 +95,8 @@ class ToolbarPanel(ttk.Frame):
         widget.bind('<Enter>', enter)
         widget.bind('<Leave>', leave) 
 
-    def raiseCommand(self, command=None):
-        self.onCommand(command)      
+    def raiseCommand(self, args={}):
+        self.onCommand(self,args)      
 
     def subscribe(self,method): 
         self.onCommand += method 

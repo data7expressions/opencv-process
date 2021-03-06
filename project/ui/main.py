@@ -10,56 +10,63 @@ from ..core.manager import *
 from ..core.uiTkinter import *
 
 
-class MainUi(ttk.Frame):
-    def __init__(self,master,mgr): 
-        super(MainUi,self).__init__(master)
-        self.mgr= mgr
+class TreeFilePanel(ttk.Frame):
+    def __init__(self, master,mgr):
+        super(TreeFilePanel,self).__init__(master)
+        self.mgr=mgr
+        self.onCommand=Event() 
+        self.tree = ttk.Treeview(self)               
+        self.tree.pack(expand=True,fill=tk.BOTH)
+        self.rootPath=None        
+
+    def set(self,rootPath):
+        self.rootPath=rootPath
+        name=path.basename(rootPath)
+        self.tree.heading('#0', text=name)
+        self.load(rootPath)
+
+    def load(self, _path, parent=""):
+        for item in listdir(_path):            
+            fullpath = path.join(_path,item)
+            if path.isdir(fullpath):
+                child = self.addItem(fullpath,item,'folder',parent)                
+                self.load(fullpath,child)
+            else:
+                filename, file_extension = path.splitext(item)
+                self.addItem(fullpath,filename,file_extension,parent)
+
+        # self.tree.bind("<Double-1>", self.onDoubleClick)
+        self.tree.bind("<<TreeviewSelect>>", self.onSelect)              
+
+    def addItem(self,fullpath,name,icon, parent=""):
+        return self.tree.insert(parent,tk.END,iid=fullpath, text=name, tags=("cb"),image=self.mgr.getIcon(icon))
+
+    def onSelect(self, event):        
+        item = self.tree.selection()[0]
+        if not path.isdir(item):
+            self.onCommand(self,{'command':'select','data':item})          
+
+    def subscribe(self,method): 
+        self.onCommand += method 
+          
+    def unsubscribe(self,method): 
+        self.onCommand -= method          
+
+class TabsFilePanel(ttk.Frame):
+    def __init__(self, master,mgr):
+        super(TabsFilePanel,self).__init__(master)
+        self.mgr=mgr
+        self.onCommand=Event()
         self.frames= {}
-        self.toolbar=None
-  
-    def init(self):
-        self.menu=tk.Menu(self.master)
-        self.master.config(menu=self.menu)
-        self.footer=ttk.Button(self.master, text="footer")
-        self.tree = ttk.Treeview(self)
-        self.tabs = ttk.Notebook(self.master)        
-        self.toolbar_init()
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(expand=True,fill=tk.BOTH)
 
-    @property
-    def config(self):    
-        return self.mgr['Config']['Ui']['Main']
+    def set(self,fullpath):        
+        name=path.basename(fullpath)
+        frame ,tabIndex = self.getCurrent()
+        frame.set(fullpath)
+        self.tabs.tab(tabIndex, text=name)
 
-    def toolbar_init(self): 
-
-        self.toolbar = ToolbarPanel(self,self.mgr)
-        self.toolbar.load(self.config['Command']) 
-        self.toolbar.subscribe(self.toolbar_onCommand)   
-  
-    def toolbar_onCommand(self,command):
-        print(command)
-    
-
-    def layout(self):
-         # self.master.attributes('-fullscreen', True)        
-        self.master.geometry("1000x800+100+100")
-        UiHelper.center(self.master)
-
-        self.toolbar.pack(side=tk.TOP, fill=tk.BOTH)
-        self.footer.pack(side=tk.BOTTOM, fill=tk.BOTH)
-        self.tree.pack(side=tk.LEFT)
-        self.tabs.pack(side=tk.RIGHT)
-        self.pack()         
-
-        # seguir ejemplo
-        #https://recursospython.com/guias-y-manuales/vista-de-arbol-treeview-en-tkinter/r
-
-    def set(self,workspacePath):
-        name=path.basename(workspacePath)
-        self.master.title(name)
-        self.tree_load(workspacePath)
-        
-
-   
     def getCurrent(self):
         frame=None
         tabIndex=None
@@ -77,55 +84,77 @@ class MainUi(ttk.Frame):
 
         return frame ,tabIndex   
 
-    def onOpen(self):
-        fullpath = self.tree.focus()
-        name=path.basename(fullpath)
-        frame ,tabIndex = self.getCurrent()
-        frame.set(fullpath)
-        self.tabs.tab(tabIndex, text=name) 
+    def tab_switch(self,event):
+        pass   
 
-        
+    def subscribe(self,method): 
+        self.onCommand += method 
+          
+    def unsubscribe(self,method): 
+        self.onCommand -= method       
+
+class MainUi(ttk.Frame):
+    def __init__(self,master,mgr): 
+        super(MainUi,self).__init__(master)
+        self.mgr= mgr
+        self.init()
+        self.layout()
+  
+    def init(self):          
+        self.toolbar = ToolbarPanel(self,self.mgr)
+        self.toolbar.load(self.config['Command']) 
+        self.toolbar.subscribe(self.onCommand)      
+        self.tree = TreeFilePanel(self,self.mgr)        
+        self.tree.subscribe(self.onCommand)
+        self.tabs = TabsFilePanel(self,self.mgr)
+        self.tabs.subscribe(self.onCommand)
+        self.pack(fill=tk.BOTH, expand=tk.YES)  
+
+    def layout(self):
+        #https://recursospython.com/guias-y-manuales/posicionar-elementos-en-tkinter/
+          
+        self.master.geometry("900x640")
+        # UiHelper.center(self.master)
+        tk.Grid.rowconfigure(self.master, 0, weight=1)
+        tk.Grid.columnconfigure(self.master, 0, weight=1)        
+        self.toolbar.grid(row=0, column=0,sticky=(tk.N + tk.S + tk.E + tk.W))
+        tk.Grid.rowconfigure(self, 0, weight=0)
+        tk.Grid.columnconfigure(self, 0, weight=0)      
+        self.tree.grid(row=1, column=0,sticky="nsew") 
+        tk.Grid.rowconfigure(self, 1, weight=1)
+        tk.Grid.columnconfigure(self, 0, weight=1)
+        self.tabs.grid(row=1, column=1,sticky="nsew") 
+        tk.Grid.rowconfigure(self, 1, weight=1)
+        tk.Grid.columnconfigure(self, 1, weight=11)
+        self.pack(fill=tk.BOTH, expand=tk.YES)         
+
+    @property
+    def config(self):    
+        return self.mgr['Config']['Ui']['Main']     
+
+    def set(self,workspacePath):
+        name=path.basename(workspacePath)
+        self.master.title(name)
+        self.tree.load(workspacePath)  
+  
+    def onCommand(self,sender,args):
+        print(args['command'])
+    
+        if args['command'] == 'select':
+           self.tabs.set(args['data'])
+
         
     def onClose(self):
         row_id = self.tree.focus()
         print(row_id)
 
-    def tab_switch(self,event):
-        pass
-        # index = event.widget.index("@%d,%d" % (event.x, event.y))
-        # title = event.widget.tab(index, "text")
-
-    def tree_load(self, _path, parent=""):
-        for item in listdir(_path):            
-            fullpath = path.join(_path,item)
-            if path.isdir(fullpath):
-                child = self.tree_addItem(fullpath,item,'folder',parent)                
-                self.tree_load(fullpath,child)
-            else:
-                filename, file_extension = path.splitext(item)
-                self.tree_addItem(fullpath,filename,file_extension,parent) 
-
-    def tree_addItem(self,fullpath,name,icon, parent=""):
-        return self.tree.insert(parent,tk.END,iid=fullpath, text=name, tags=("cb"),image=self.mgr.getIcon(icon))
-
-    # def open(self):
-        
-    #     f1 = ImageFrame(self.tabs, "Tab1")
-
-    #     self.tabs.add(f1, text= "Tab1")
-    #     self.tabs.bind("<Button-1>", self.tab_switch)
-    #     self.tabs.pack(expand = 1, fill ="both") 
-
-       
-    # def tab_switch(self,event):
-    #     index = event.widget.index("@%d,%d" % (event.x, event.y))
-    #     title = event.widget.tab(index, "text")
-
 class ContainerUi(ttk.Frame):
     def __init__(self, master,mgr):
         super(ContainerUi,self).__init__(master)
         self.mgr=mgr
-        self.frames = {}        
+        self.frames = {}
+        self.init()
+        self.layout()        
         
     def init(self):
         pass
@@ -148,8 +177,6 @@ class ContainerUi(ttk.Frame):
         if key in self.frames:
             return self.frames[key] 
         frame = self.mgr['Ui'].new(key,{'master':self})
-        frame.init()
-        frame.layout()
         self.frames[key] = frame
         return frame      
 
@@ -162,7 +189,8 @@ class ImageUi(ttk.Frame):
     def __init__(self, master,mgr):
         super(ImageUi,self).__init__(master)
         self.mgr=mgr 
-        self.panel=None       
+        self.init()
+        self.layout()       
         
     def init(self):
         self.panel = tk.Label(self)
@@ -182,17 +210,54 @@ class ImageUi(ttk.Frame):
 class ProcessUi(ttk.Frame):
     def __init__(self, master,mgr):
         super(ProcessUi,self).__init__(master)
-        self.mgr=mgr 
-        self.panel=None       
+        self.mgr=mgr         
+        self.init()
+        self.layout()       
         
     def init(self):
-        pass
+        self.panel = tk.Label(self)
 
     def layout(self):
         self.pack()   
 
     def set(self,fullpath):
+        name, spec = self.getProcess(fullpath)
+        img = self.createGraph(spec)
+        self.showGraph(img)
+    
+
+    def getProcess(self,processPath):
+        name=None
+        spec=None        
+        with open(processPath, 'r') as stream:
+            try:
+                data = yaml.safe_load(stream)
+                if 'Process' in data:
+                    l=data['Process']
+                    name = list(l.keys())[0]
+                    spec= l[name]                  
+            except yaml.YAMLError as exc:
+                print(exc)
+
+        return name,spec         
+
+    def createGraph(self,spec):
         pass
+        # https://graphviz.readthedocs.io/en/stable/
+        # https://graphviz.org/resources/
+        # https://github.com/pydot/pydot
+
+    def showGraph(self,imgPath):
+        load = Image.open(imgPath)
+        load = load.resize((640,480), Image.ANTIALIAS)
+        img = ImageTk.PhotoImage(load)
+        self.panel.configure(image=img)    
+        self.panel.image = img
+        self.panel.place(x=0, y=0)
+        self.panel.pack(expand = 1, fill ="both")
+
+
+
 
 from pygments import lexers,highlight
 from pygments.formatters import HtmlFormatter
@@ -204,7 +269,9 @@ class EditorUi(ttk.Frame):
     def __init__(self, master,mgr):
         super(EditorUi,self).__init__(master)
         self.mgr=mgr 
-        self.htmlFrame=None       
+        self.htmlFrame=None
+        self.init()
+        self.layout()       
         
     def init(self):
         self.htmlFrame = HtmlFrame(self, horizontal_scrollbar="auto")
