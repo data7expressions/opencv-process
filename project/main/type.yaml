@@ -1,12 +1,92 @@
+# http://elvex.ugr.es/decsai/csharp/language/data.xml
+# https://www.monografias.com/trabajos107/tipos-datos-opencv/tipos-datos-opencv.shtml
+
 Type:
-  image:
+  sbyte:
+    precision: 8
+    sign: True
+    ctl: number    
+  byte:
+    precision: 8
+    sign: False
+    ctl: number 
+  short:
+    precision: 16
+    sign: True
+    ctl: number 
+  ushort:
+    precision: 16
+    sign: False
+    ctl: number 
   int:
-  str:
+    precision: 32
+    sign: True
+    ctl: number 
+  uint:
+    precision: 32
+    sign: False
+    ctl: number 
+  long:
+    precision: 64
+    sign: True
+    ctl: number 
+  ulong:
+    precision: 64
+    sign: False
+    ctl: number 
+  decimal:
+    precision: 128
+    sign: False
+    ctl: decimal 
+  string:
+    ctl: textbox
   enum:
+    ctl: enum 
+  point:
+    struct:
+      x: int
+      y: int
+    ctl: point   
+  size:
+    struct:
+      w: int
+      h: int
+    ctl: size    
+  rect:
+    struct:
+      x: int
+      y: int
+      w: int
+      h: int
+    ctl: rect   
+  scalar:
+    struct:
+      val: long[4]
+    ctl: scalar  
+  rgb:
+    struct:
+      r: byte
+      g: byte  
+      b: byte
+    ctl: rgb        
+  image:
+    ctl: image 
   filename:
-    base: str
+    base: string
+    ctl: filename
   filePath:
-    base: str
+    base: string
+    ctl: filePath
+    re: (.+?)(\.[^.]*$|$)
+  folderPath:
+    base: string
+    ctl: folderPath
+    re: \\(\\\w+)*\\  
   email:
-    base: str
+    base: string
+    ctl: textbox
     re: ^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$
+  url:
+    base: string
+    ctl: textbox
+    re: (?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\  

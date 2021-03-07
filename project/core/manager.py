@@ -21,7 +21,7 @@ class Manager():
         key = Helper.rreplace(value.__name__,self.type , '')  
         self.list[key]= value(self.mgr)
 
-    def addConfig(self,key,value):
+    def applyConfig(self,key,value):
         self.list[key]= value
 
     def __getitem__(self,key):
@@ -42,7 +42,7 @@ class MainManager(Manager):
         self.add(EnumManager)
         self.add(ConfigManager)        
         self.add(TaskManager) 
-        self.add(ExpressionManager) 
+        self.add(ExpManager) 
         self.add(ProcessManager) 
         self.add(TestManager)
         self.add(HelperManager)
@@ -82,7 +82,7 @@ class MainManager(Manager):
                 for type in data:
                     keys=data[type]
                     for key in keys:
-                        self[type].addConfig(key,keys[key]) 
+                        self[type].applyConfig(key,keys[key]) 
             except yaml.YAMLError as exc:
                 print(exc)               
 
@@ -122,27 +122,32 @@ class MainManager(Manager):
     
   
 
-class ExpressionManager(Manager):
+class ExpManager(Manager):
     def __init__(self,mgr):
-        super(ExpressionManager,self).__init__(mgr)
+        super(ExpManager,self).__init__(mgr)
 
-    def solve(self,expresion,context):
-        if type(expresion) is str: 
-            if expresion.startswith('$'):
-                variable=expresion.replace('$','')
+    def solve(self,exp,context):
+        if type(exp) is str: 
+            if exp.startswith('$'):
+                variable=exp.replace('$','')
                 return context['vars'][variable]
-            elif expresion.startswith('enum.'):
-                arr=expresion.replace('enum.','').split('.')
+            elif exp.startswith('enum.'):
+                arr=exp.replace('enum.','').split('.')
                 return self.mgr['Enum'][arr[0]].value(arr[1])
-                   
-        return expresion
+        return exp
 
-    def solveParams(self,params,context):
-        result={}    
-        for key in params:
-            expression = params[key]
-            result[key] = self.solve(expression,context) 
-        return result                       
+    def var(self,exp):
+        if type(exp) is str: 
+            if exp.startswith('$'):
+                return exp.replace('$','')
+        return None
+
+    def eval(self,exp,context):
+        return True
+
+    def solveParams(self,params,context):  
+        for param in params:
+            param['value'] = self.solve(param['exp'],context)                    
 
 class TypeManager(Manager):
     def __init__(self,mgr):
@@ -162,22 +167,22 @@ class EnumManager(Manager):
     def __init__(self,mgr):
         super(EnumManager,self).__init__(mgr)
 
-    def addConfig(self,key,value):
+    def applyConfig(self,key,value):
         self.list[key]= Enum(value) 
 
 class ConfigManager(Manager):
     def __init__(self,mgr):
         super(ConfigManager,self).__init__(mgr)
 
-    def addConfig(self,key,value):
+    def applyConfig(self,key,value):
         self.list[key]= value 
 
 class TaskManager(Manager):
     def __init__(self,mgr):
         super(TaskManager,self).__init__(mgr)
 
-    def addConfig(self,key,value):
-        self.list[key].setSpec(value)
+    # def applyConfig(self,key,value):
+    #     self.list[key].setSpec(value)
 
 class TestManager(Manager):
     def __init__(self,mgr):
@@ -199,20 +204,28 @@ class Process:
         self.context=context 
 
     def solveParams(self,params,context):
-        return self.mgr['Expression'].solveParams(params,context)            
+        return self.mgr['Exp'].solveParams(params,context)            
 
     def node(self,key):
         return self.spec['nodes'][key]    
 
     def start(self):
         self.init()
-        self.execute('start')
+        starts = dict(filter(lambda p: p[1]['type'] == 'Start', self.spec['nodes'].items()))
+        for name in starts:
+            start = starts[name]
+            if 'exp' in start:
+                if self.mgr['Exp'].eval(start['exp']):
+                    self.execute(name)
+            else:
+                self.execute(name)        
 
     def init(self):
         if 'init' in self.spec:
-            vars = self.solveParams(self.spec['init'],self.context)
-            for k in vars:
-                self.context['vars'][k]=vars[k] 
+            self.solveParams(self.spec['init'],self.context)
+            for p in self.spec['init']:
+                print(p)
+                self.context['vars'][p['name']]=p['value']
 
     def restart(self):
         self.execute(self.context.current)
@@ -234,22 +247,27 @@ class Process:
     def executeTask(self,node):
         try:
             taskManager = self.mgr['Task'][node['task']]
-            input = self.solveParams(node['input'],self.context)
+            self.solveParams(node['input'],self.context)
+            input={}
+            for p in node['input']:
+                input[p['name']]=p['value'] 
             result=taskManager.execute(**input)
             if 'output' in node:
-                self.context['vars'][node['output']]=result  
+                for i,p  in enumerate(node['output']):
+                    self.context['vars'][p['assig']]=result[i] if type(result) is tuple else result   
         except:
-            print("Unexpected error:", sys.exc_info()[0])
+            print("Unexpected error:", sys.exc_info())
             raise
 
     def nextNode(self,node):
         if 'transition' not in node: return        
         transition = node['transition']        
-        if type(transition) is str:self.execute(transition) 
-        elif type(transition) is list: 
-            for p in transition:self.execute(p) 
-        elif type(transition) is dict: 
-            for k in transition:self.execute(transition[k])
+        for p in transition:
+            if 'exp' in transition:
+                if self.mgr['Exp'].eval(p['exp']):
+                    self.execute(p['target']) 
+            else:
+                self.execute(p['target'])  
     
 class ProcessManager(Manager):
     def __init__(self,mgr):
@@ -261,6 +279,68 @@ class ProcessManager(Manager):
         instance=Process(self.mgr,self,spec,context)
         self._instances.append(instance)
         instance.start()
+
+    def applyConfig(self,key,value):
+        self.completeSpec(key,value)
+        self.list[key]= value
+
+    def completeSpec(self,key,spec):
+        spec['name']= key        
+        for key in spec['nodes']:
+            self.completeSpecNode(spec['nodes'][key])
+        self.completeSpecVars(spec)
+
+    def completeSpecVars(self,spec):
+        vars={}
+        if 'input' in spec:
+            for p in spec['input']:
+                vars[p['name']]={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}  
+        if 'nodes' in spec:
+            for key in spec['nodes']:
+                node=spec['nodes'][key]
+                if 'input' in node:
+                    for p in node['input']:
+                        var =self.mgr['Exp'].var(p['exp'])
+                        if var != None:
+                            vars[var]={'type':p['type'],'bind':(True if var in spec['bind'] else False )}  
+                if 'output' in node:
+                    for p in node['output']:
+                        vars[p['assig']]={'type':p['type'],'bind':(True if p['assig'] in spec['bind'] else False )} 
+        spec['vars']=vars
+            
+    def completeSpecNode(self,node):
+        type=node['type'] 
+        if type == 'Start':self.completeSpecNodeStart(node)
+        elif type == 'End':self.completeSpecNodeEnd(node)            
+        elif type == 'Task': self.completeSpecNodeTask(node) 
+        return self.completeSpecNodeDefault(node) 
+
+    def completeSpecNodeDefault(self,node):
+        self.completeSpecTransition(node)
+    def completeSpecNodeStart(self,node):
+        self.completeSpecTransition(node)
+    def completeSpecNodeEnd(self,node):
+        self.completeSpecTransition(node)
+    def completeSpecNodeTask(self,node):
+
+        taskSpec=self.mgr['Config']['Task'][node['task']]
+
+        if 'input' not in taskSpec: node['input']=[]        
+        for p in node['input']:
+            p['type'] = next(x for x in taskSpec['input'] if x['name'] == p['name'])['type']
+        
+        if 'output' not in taskSpec: node['output']=[]        
+        for p in node['output']:
+            p['type'] = next(x for x in taskSpec['output'] if x['name'] == p['name'])['type']
+            
+        self.completeSpecTransition(node)        
+        return node
+
+   
+    def completeSpecTransition(self,node):        
+        if 'transition' not in node:
+            node['transition']=[] 
+            
     
 class UiManager(Manager):
     def __init__(self,mgr):

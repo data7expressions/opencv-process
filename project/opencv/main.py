@@ -16,7 +16,6 @@ class ImReadTask():
 class ImWriteTask():
     def __init__(self,mgr):
         self.mgr=mgr
-        # super(ImWriteTask,self).__init__(mgr)
     def execute(self,filename,img):
         return cv.imwrite(filename,img)
 

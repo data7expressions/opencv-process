@@ -4,24 +4,34 @@ Enum:
     BGR2GRAY: 6
     RGB2GRAY: 7
     BGR2HSV: 40 
+
 Config:
   Task:
     CvtColor:
       description:
       input:
-        source: image
-        code: Enum.ColorConversion
-      output: image
+      - name: source 
+        type: image
+      - name: code 
+        type: Enum.ColorConversion
+      output:
+      - name: default 
+        type: image
     ImRead:
       description:
       input:
-        filename: filePath
-      output: image 
+      - name: filename 
+        type: filePath
+      output: 
+      - name: default
+        type: image 
     ImWrite:
       description:
       input:
-        filename: filePath
-        img: image
+      - name: filename 
+        type: filePath
+      - name: img 
+        type: image
 
     
 

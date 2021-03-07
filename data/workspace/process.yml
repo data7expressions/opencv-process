@@ -1,39 +1,53 @@
 Process:
   test:
     input:
-      source: filePath
-      target: filePath
+      - name: source
+        type: filePath
+      - name: target
+        type: filePath
+    bind: [colorConversion,img,gray]
     init:
-      colorConversion: enum.ColorConversion.BGR2RGB
+      - name: colorConversion
+        exp: enum.ColorConversion.BGR2RGB
     nodes:
       start:
         type: Start
-        transition: readImage
+        transition: 
+        - target: readImage
       readImage:
         type: Task
         task: ImRead
         input:
-          filename: $source
-        output: img
-        transition: transform
+        - name: filename 
+          exp: $source
+        output: 
+        - name: default 
+          assig: img
+        transition: 
+        - target: transform
       transform:
         type: Task
         task: CvtColor
         input:
-          source: $img
-          code: $colorConversion    
-        output: gray
-        transition: save
+        - name: source
+          exp: $img
+        - name: code
+          exp: $colorConversion    
+        output: 
+        - name: default 
+          assig: gray
+        transition: 
+        - target: save
       save:
         type: Task
         task: ImWrite
         input:
-          filename: $target
-          img: $gray
-        transition: end
+        - name: filename
+          exp: $target
+        - name: img
+          exp: $gray
+        transition: 
+        - target: end
       end:
         type: End   
-    show:
-      source:
-      target:
-      colorConversion:
+    

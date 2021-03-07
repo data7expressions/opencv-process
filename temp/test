@@ -1,0 +1,17 @@
+// The Round Table
+digraph {
+	node [shape=circle]
+	start [label=start]
+	node [shape=box]
+	readImage [label="img=ImRead(filename:$source)"]
+	node [shape=box]
+	transform [label="gray=CvtColor(source:$img,code:$colorConversion)"]
+	node [shape=box]
+	save [label="ImWrite(filename:$target,img:$gray)"]
+	node [shape=doublecircle]
+	end [label=end]
+	start -> readImage
+	readImage -> transform
+	transform -> save
+	save -> end
+}
