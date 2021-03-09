@@ -11,4 +11,5 @@ Config:
     Main:
       Command:
         new:
-        open:  
+        open:
+        start:  

@@ -16,107 +16,15 @@ from ..core.manager import *
 from ..core.uiTkinter import *
 
 
-class TreeFilePanel(ttk.Frame):
+class MainUi(Frame):
     def __init__(self, master, mgr):
-        super(TreeFilePanel, self).__init__(master)
-        self.mgr = mgr
-        self.onCommand = Event()
-        self.tree = ttk.Treeview(self)
-        self.tree.pack(expand=True, fill=tk.BOTH)
-        self.rootPath = None
-
-    def set(self, rootPath):
-        self.rootPath = rootPath
-        name = path.basename(rootPath)
-        self.tree.heading('#0', text=name)
-        self.load(rootPath)
-
-    def load(self, _path, parent=""):
-        for item in listdir(_path):
-            fullpath = path.join(_path, item)
-            if path.isdir(fullpath):
-                child = self.addItem(fullpath, item, 'folder', parent)
-                self.load(fullpath, child)
-            else:
-                filename, file_extension = path.splitext(item)
-                self.addItem(fullpath, filename, file_extension, parent)
-
-        # self.tree.bind("<Double-1>", self.onDoubleClick)
-        self.tree.bind("<<TreeviewSelect>>", self.onSelect)
-
-    def addItem(self, fullpath, name, icon, parent=""):
-        return self.tree.insert(parent, tk.END, iid=fullpath, text=name, tags=("cb"), image=self.mgr.getIcon(icon))
-
-    def onSelect(self, event):
-        item = self.tree.selection()[0]
-        if not path.isdir(item):
-            self.onCommand(self, {'command': 'select', 'data': item})
-
-    def subscribe(self, method):
-        self.onCommand += method
-
-    def unsubscribe(self, method):
-        self.onCommand -= method
-
-
-class TabsFilePanel(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(TabsFilePanel, self).__init__(master)
-        self.mgr = mgr
-        self.onCommand = Event()
-        self.frames = {}
-        self.tabs = ttk.Notebook(self)
-        self.tabs.pack(expand=True, fill=tk.BOTH)
-
-    def set(self, fullpath):
-        name = path.basename(fullpath)
-        frame, tabIndex = self.getCurrent()
-        frame.set(fullpath)
-        self.tabs.tab(tabIndex, text=name)
-
-    def getCurrent(self):
-        frame = None
-        tabIndex = None
-        s = self.tabs.select()
-        if s == '':
-            frame = self.mgr['Ui'].new('Container', {'master': self.master})
-            self.tabs.add(frame)
-            self.tabs.bind("<Button-1>", self.tab_switch)
-            self.tabs.pack(expand=1, fill="both")
-            tabIndex = self.tabs.index(self.tabs.select())
-            self.frames[tabIndex] = frame
-        else:
-            tabIndex = self.tabs.index(s)
-            frame = self.frames[tabIndex]
-
-        return frame, tabIndex
-
-    def tab_switch(self, event):
-        pass
-
-    def subscribe(self, method):
-        self.onCommand += method
-
-    def unsubscribe(self, method):
-        self.onCommand -= method
-
-
-class MainUi(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(MainUi, self).__init__(master)
-        self.mgr = mgr
-        self.init()
-        self.layout()
+        super(MainUi, self).__init__(master,mgr,UiMediatior())
 
     def init(self):
-        self.toolbar = ToolbarPanel(self, self.mgr)
+        self.toolbar = ToolbarPanel(self, self.mgr,self.mediator)               
+        self.tree = TreeFilePanel(self, self.mgr,self.mediator)        
+        self.tabs = TabsFilePanel(self, self.mgr,self.mediator)
         self.toolbar.load(self.config['Command'])
-        self.toolbar.subscribe(self.onCommand)
-        self.tree = TreeFilePanel(self, self.mgr)
-        self.tree.subscribe(self.onCommand)
-        self.tabs = TabsFilePanel(self, self.mgr)
-        self.tabs.subscribe(self.onCommand)
-        self.pack(fill=tk.BOTH, expand=tk.YES)
 
     def layout(self):
         # https://recursospython.com/guias-y-manuales/posicionar-elementos-en-tkinter/
@@ -143,30 +51,20 @@ class MainUi(ttk.Frame):
         self.master.title(name)
         self.tree.load(workspacePath)
 
-    def onCommand(self, sender, args):
-        print(args['command'])
-
-        if args['command'] == 'select':
-            self.tabs.set(args['data'])
+    def onCommand(self, sender,command, args):        
+        print(command)
 
     def onClose(self):
         row_id = self.tree.focus()
         print(row_id)
 
 
-class ContainerUi(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(ContainerUi, self).__init__(master)
-        self.mgr = mgr
-        self.currentFrame = None
-        self.init()
-        self.layout()
+class ContainerUi(Frame):
+    def __init__(self, master, mgr,mediator):        
+        super(ContainerUi, self).__init__(master, mgr,mediator) 
 
     def init(self):
-        pass
-
-    def layout(self):
-        pass
+        self.currentFrame = None
 
     def getFrame(self, fullpath):
         file = path.basename(fullpath)
@@ -179,7 +77,7 @@ class ContainerUi(ttk.Frame):
                 break
         if key == None:
             key = 'Editor'
-        return self.mgr['Ui'].new(key, {'master': self})
+        return self.mgr['Ui'].new(key, {'master': self,'mediator':self.mediator})
 
     def set(self, fullpath):
         if self.currentFrame != None:
@@ -189,18 +87,15 @@ class ContainerUi(ttk.Frame):
         print(fullpath)
 
 
-class ImageUi(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(ImageUi, self).__init__(master)
-        self.mgr = mgr
-        self.init()
-        self.layout()
+class ImageUi(Frame):
+    def __init__(self, master, mgr,mediator):
+        super(ImageUi, self).__init__(master, mgr,mediator)
 
     def init(self):
         self.panel = tk.Label(self)
 
     def layout(self):
-        self.pack()
+        self.pack() 
 
     def set(self, fullpath):
         load = Image.open(fullpath)
@@ -213,13 +108,9 @@ class ImageUi(ttk.Frame):
 
 
 
-class ProcessGraphPanel(ttk.Frame):
-    def __init__(self, master,mgr):
-        super(ProcessGraphPanel,self).__init__(master)
-        self.mgr=mgr
-        self.onCommand=Event()
-        self.init()
-        self.layout()
+class ProcessGraphPanel(Frame):
+    def __init__(self, master,mgr,mediator):
+        super(ProcessGraphPanel,self).__init__(master, mgr,mediator)
     """
     References: 
         https://graphviz.readthedocs.io/en/stable/examples.html
@@ -232,6 +123,7 @@ class ProcessGraphPanel(ttk.Frame):
         self.panel = tk.Label(self)
     def layout(self):
         self.pack()
+
 
     def set(self, spec):
         img = self.createGraph(spec)
@@ -296,19 +188,13 @@ class ProcessGraphPanel(ttk.Frame):
         self.panel.pack(expand=1, fill="both")
 
 
-class ControlsPanel(ttk.Frame):
-    def __init__(self, master,mgr):
-        super(ControlsPanel,self).__init__(master)
-        self.mgr=mgr
-        self.controls=[]
-        self.init()
-        self.layout()
+class ControlsPanel(Frame):
+    def __init__(self, master,mgr,mediator):
+        super(ControlsPanel,self).__init__(master, mgr,mediator)
 
     def init(self):
-        pass
-    def layout(self):
-        pass
-
+        self.controls=[]
+ 
     def set(self, vars):
         self.initControls(vars)
         self.layoutControls()
@@ -341,23 +227,19 @@ class ControlsPanel(ttk.Frame):
             return tk.Spinbox(master, from_= from_, to = to)
         elif type.startswith('Enum.'):
             enum=type.replace('Enum.','')
-            values=self.mgr['Enum'][enum].values
-            return ttk.Combobox(master,values=values.keys())
+            values= []
+            for k in self.mgr['Enum'][enum].values.keys():
+                values.append(k) 
+            return ttk.Combobox(master,values=values)
         else:
             return tk.Label(master,text=type)               
 
-class imagesPanel(ttk.Frame):
-    def __init__(self, master,mgr):
-        super(imagesPanel,self).__init__(master)
-        self.mgr=mgr
-        self.controls=[]
-        self.init()
-        self.layout()
+class ImagesPanel(Frame):
+    def __init__(self, master,mgr,mediator):
+        super(ImagesPanel,self).__init__(master, mgr,mediator)
 
     def init(self):
-        pass
-    def layout(self):
-        pass
+        self.controls=[]
 
     def set(self, vars):
         self.initControls(vars)
@@ -373,17 +255,14 @@ class imagesPanel(ttk.Frame):
         for i,p in enumerate(self.controls):
             p['control'].place(x=(160*i)+20, y=0, width=160, height=120)
  
-class ProcessUi(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(ProcessUi, self).__init__(master)
-        self.mgr = mgr
-        self.init()
-        self.layout()
+class ProcessUi(Frame):
+    def __init__(self, master, mgr,mediator):
+        super(ProcessUi, self).__init__(master, mgr,mediator)
 
     def init(self):
-        self.graph = ProcessGraphPanel(self,self.mgr)
-        self.controls = ControlsPanel(self,self.mgr)
-        self.images = imagesPanel(self,self.mgr)
+        self.graph = ProcessGraphPanel(self,self.mgr,self.mediator)
+        self.controls = ControlsPanel(self,self.mgr,self.mediator)
+        self.images = ImagesPanel(self,self.mgr,self.mediator)
 
     def layout(self):
         tk.Grid.rowconfigure(self, 0, weight=3)
@@ -430,13 +309,9 @@ class ProcessUi(ttk.Frame):
 
 
 
-class EditorUi(ttk.Frame):
-    def __init__(self, master, mgr):
-        super(EditorUi, self).__init__(master)
-        self.mgr = mgr
-        self.htmlFrame = None
-        self.init()
-        self.layout()
+class EditorUi(Frame):
+    def __init__(self, master, mgr,mediator):
+        super(EditorUi, self).__init__(master, mgr,mediator)
 
     def init(self):
         self.htmlFrame = HtmlFrame(self, horizontal_scrollbar="auto")

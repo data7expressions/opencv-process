@@ -3,6 +3,18 @@ import tkinter as tk
 from tkinter import ttk
 from os import path,listdir
 
+class UiMediatior(Mediator):
+    def __init__(self):
+        super(UiMediatior, self).__init__()
+        self._currentEditor=None
+
+    @property
+    def currentEditor(self):
+        return self._currentEditor
+
+    @currentEditor.setter
+    def currentEditor(self,value):
+        self._currentEditor=value  
 
 class UiHelper():
 
@@ -65,12 +77,30 @@ class IconProvider():
         if key not in self.icons: key = '_blank'
         return self.icons[key.replace('.','')]   
 
-class ToolbarPanel(ttk.Frame):
-    def __init__(self, master,mgr):
-        super(ToolbarPanel,self).__init__(master)
-        self.mgr=mgr
+class Frame(ttk.Frame):
+    def __init__(self, master, mgr,mediator):
+        super(Frame, self).__init__(master)
+        self.mgr = mgr
+        self.mediator=mediator
+        self.mediator.onCommand+=self.onCommand
+        self.init()
+        self.layout()
+
+    def init(self):
+        pass
+
+    def layout(self):
+        pass
+
+    def onCommand(self,sender,command,args):
+        pass    
+
+class ToolbarPanel(Frame):
+    def __init__(self, master,mgr,mediator):        
+        super(ToolbarPanel,self).__init__(master,mgr,mediator)        
+
+    def init(self):
         self.buttons = {}
-        self.onCommand=Event()
 
     def load(self,dic):
         for key in dic:
@@ -80,7 +110,7 @@ class ToolbarPanel(ttk.Frame):
 
     def add(self,command,img=None,tootip=None):
         icon = self.mgr.getIcon(Helper.nvl(img,command))
-        btn = ttk.Button(self, image=icon, command=  lambda: self.raiseCommand({'command':command}) )
+        btn = ttk.Button(self, image=icon, command=  lambda: self.mediator.raiseCommand(command,{}) )
         btn.image = icon
         btn.pack(side=tk.LEFT)
         self.createToolTip(btn,Helper.nvl(tootip,command))
@@ -93,15 +123,85 @@ class ToolbarPanel(ttk.Frame):
         def leave(event):
             toolTip.hidetip()
         widget.bind('<Enter>', enter)
-        widget.bind('<Leave>', leave) 
-
-    def raiseCommand(self, args={}):
-        self.onCommand(self,args)      
-
-    def subscribe(self,method): 
-        self.onCommand += method 
-          
-    def unsubscribe(self,method): 
-        self.onCommand -= method      
+        widget.bind('<Leave>', leave)        
        
+class TreeFilePanel(Frame):
+    def __init__(self, master, mgr,mediator):        
+        super(TreeFilePanel, self).__init__(master,mgr,mediator)
+
+    def init(self):
+        self.rootPath = None
+        self.tree = ttk.Treeview(self)
+    def layout(self):
+        self.tree.pack(expand=True, fill=tk.BOTH)      
+
+    def set(self, rootPath):
+        self.rootPath = rootPath
+        name = path.basename(rootPath)
+        self.tree.heading('#0', text=name)
+        self.load(rootPath)
+
+    def load(self, _path, parent=""):
+        for item in listdir(_path):
+            fullpath = path.join(_path, item)
+            if path.isdir(fullpath):
+                child = self.addItem(fullpath, item, 'folder', parent)
+                self.load(fullpath, child)
+            else:
+                filename, file_extension = path.splitext(item)
+                self.addItem(fullpath, filename, file_extension, parent)
+
+        # self.tree.bind("<Double-1>", self.onDoubleClick)
+        self.tree.bind("<<TreeviewSelect>>", self.onSelect)      
+
+    def addItem(self, fullpath, name, icon, parent=""):
+        return self.tree.insert(parent, tk.END, iid=fullpath, text=name, tags=("cb"), image=self.mgr.getIcon(icon))
+
+    def onSelect(self, event):
+        item = self.tree.selection()[0]
+        if not path.isdir(item):
+            self.mediator.raiseCommand(self,'select',{'item': item})
+
+class TabsFilePanel(Frame):
+    def __init__(self, master, mgr,mediator):
+        super(TabsFilePanel, self).__init__(master,mgr,mediator)        
+
+    def init(self):
+        self.frames = {}
+        self.tabs = ttk.Notebook(self)
+
+    def layout(self):
+        self.tabs.pack(expand=True, fill=tk.BOTH)
+
+    def onCommand(self,sender,command,args):
+        if command == 'select':
+            self.set(args['item'])
+
+    def set(self, fullpath):
+        name = path.basename(fullpath)
+        frame, tabIndex = self.getCurrent()
+        frame.set(fullpath)
+        # frame.current()
+        self.tabs.tab(tabIndex, text=name)
+
+    def getCurrent(self):
+        frame = None
+        tabIndex = None
+        s = self.tabs.select()
+        if s == '':
+            frame = self.mgr['Ui'].new('Container', {'master': self.master,'mediator': self.mediator})
+            self.tabs.add(frame)
+            self.tabs.bind("<Button-1>", self.tab_switch)
+            self.tabs.pack(expand=1, fill="both")
+            tabIndex = self.tabs.index(self.tabs.select())
+            self.frames[tabIndex] = frame
+        else:
+            tabIndex = self.tabs.index(s)
+            frame = self.frames[tabIndex]
+
+        return frame, tabIndex
+
+    def tab_switch(self, event):
+        pass
+
   
