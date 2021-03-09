@@ -85,6 +85,10 @@ class Frame(ttk.Frame):
         self.mediator.onCommand+=self.onCommand
         self.init()
         self.layout()
+        
+    def __del__(self):
+        self.mediator.onCommand-=self.onCommand
+        self.master.destroy()      
 
     def init(self):
         pass
@@ -93,7 +97,9 @@ class Frame(ttk.Frame):
         pass
 
     def onCommand(self,sender,command,args):
-        pass    
+        pass
+
+    
 
 class ToolbarPanel(Frame):
     def __init__(self, master,mgr,mediator):        
