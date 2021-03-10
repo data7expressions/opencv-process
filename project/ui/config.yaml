@@ -5,11 +5,12 @@ Config:
       extensions: [jpg,png,gif]
     Process:
       #la idea es usar la extension ypml 
-      extensions: [yml]  
+      extensions: [yml]
+      Command:       
+        start:  
     Editor:
       extensions: [yaml]
     Main:
       Command:
         new:
-        open:
-        start:  
+        open: 

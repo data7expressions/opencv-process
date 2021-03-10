@@ -26,6 +26,10 @@ class MainUi(Frame):
         self.tabs = TabsFilePanel(self, self.mgr,self.mediator)
         self.toolbar.load(self.config['Command'])
 
+    @property
+    def config(self):
+        return self.mgr['Config']['Ui']['Main']    
+
     def layout(self):
         # https://recursospython.com/guias-y-manuales/posicionar-elementos-en-tkinter/
 
@@ -40,23 +44,67 @@ class MainUi(Frame):
         tk.Grid.rowconfigure(self, 1, weight=1)
         tk.Grid.columnconfigure(self, 1, weight=11)
         self.tabs.grid(row=1, column=1, sticky="nsew")        
-        self.pack(fill=tk.BOTH, expand=tk.YES)
-
-    @property
-    def config(self):
-        return self.mgr['Config']['Ui']['Main']
+        self.pack(fill=tk.BOTH, expand=tk.YES)   
 
     def set(self, workspacePath):
         name = path.basename(workspacePath)
         self.master.title(name)
         self.tree.load(workspacePath)
 
-    def onCommand(self, sender,command, args):        
-        print(command)
+    def onMessage(self,sender,verb,resource,args):       
+        print(verb)
 
     def onClose(self):
         row_id = self.tree.focus()
         print(row_id)
+
+class TabsFilePanel(Frame):
+    def __init__(self, master, mgr,mediator):
+        super(TabsFilePanel, self).__init__(master,mgr,mediator)        
+
+    def init(self):
+        self.frames = {}
+        self.tabs = ttk.Notebook(self)
+
+    def layout(self):
+        self.tabs.pack(expand=True, fill=tk.BOTH)
+
+    def onMessage(self,sender,verb,resource,args):
+        if verb == 'select' and resource == 'file':
+            self.set(args['item'])
+
+    def set(self, fullpath):
+        name = path.basename(fullpath)
+        frame, index = self.getCurrent()
+        frame.set(fullpath)
+        self.tabs.tab(index, text=name)
+        self.setCurrent(index)
+
+    def setCurrent(self,index):
+        for k in self.frames:
+            self.frames[k].current  = k == index
+
+    def tab_switch(self, event):
+        print(event)
+
+    def getCurrent(self):
+        frame = None
+        tabIndex = None
+        s = self.tabs.select()
+        if s == '':
+            frame = self.mgr['Ui'].new('Container', {'master': self.master,'mediator': self.mediator})
+            self.tabs.add(frame)
+            self.tabs.bind("<Button-1>", self.tab_switch)
+            self.tabs.pack(expand=1, fill="both")
+            tabIndex = self.tabs.index(self.tabs.select())
+            self.frames[tabIndex] = frame
+        else:
+            tabIndex = self.tabs.index(s)
+            frame = self.frames[tabIndex]
+
+        return frame, tabIndex
+
+    
 
 
 class ContainerUi(Frame):
@@ -64,9 +112,26 @@ class ContainerUi(Frame):
         super(ContainerUi, self).__init__(master, mgr,mediator) 
 
     def init(self):
-        self.currentFrame = None
+        self.currentEditor = None
 
-    def getFrame(self, fullpath):
+    @property
+    def current(self):
+        return self.currentEditor.current if self.currentEditor != None else False
+
+    @current.setter
+    def current(self,value):
+        if self.currentEditor != None:
+            self.currentEditor.current = value
+            if value :                               
+                commands = self.currentEditor.config['Command'] if 'Command' in self.currentEditor.config else {} 
+                if commands != None:
+                    self.mediator.send(self,'add','command',{'commands':commands,'contextual': True})
+
+    def set(self, fullpath):
+        editor  = self.getEditor(fullpath)
+        editor.set(fullpath)         
+
+    def getEditor(self, fullpath):
         file = path.basename(fullpath)
         filename, fileExtension = path.splitext(file)
         fileExtension = fileExtension.replace('.', '')
@@ -77,17 +142,38 @@ class ContainerUi(Frame):
                 break
         if key == None:
             key = 'Editor'
-        return self.mgr['Ui'].new(key, {'master': self,'mediator':self.mediator})
 
-    def set(self, fullpath):
-        if self.currentFrame != None:
-            self.currentFrame.destroy()
-        self.currentFrame = self.getFrame(fullpath)
-        self.currentFrame.set(fullpath)
-        print(fullpath)
+        if self.currentEditor != None:
+            currentKey = self.mgr['Ui'].key(self.currentEditor)
+            if key == currentKey:
+                return self.currentEditor
+            else:
+                self.currentEditor.destroy()      
+        self.currentEditor = self.mgr['Ui'].new(key, {'master': self,'mediator':self.mediator})
+        return self.currentEditor
 
 
-class ImageUi(Frame):
+class FileEditor(Frame):
+    def __init__(self, master, mgr,mediator):        
+        super(FileEditor, self).__init__(master, mgr,mediator)
+        self._current= False
+
+    @property
+    def config(self):
+        key = self.mgr['Ui'].key(self)
+        return self.mgr['Config']['Ui'][key]
+        
+
+    @property
+    def current(self):
+        return self._current
+
+    @current.setter
+    def current(self,value):
+        self._current=value      
+
+
+class ImageUi(FileEditor):
     def __init__(self, master, mgr,mediator):
         super(ImageUi, self).__init__(master, mgr,mediator)
 
@@ -187,7 +273,6 @@ class ProcessGraphPanel(Frame):
         self.panel.place(x=0, y=0)
         self.panel.pack(expand=1, fill="both")
 
-
 class ControlsPanel(Frame):
     def __init__(self, master,mgr,mediator):
         super(ControlsPanel,self).__init__(master, mgr,mediator)
@@ -255,7 +340,8 @@ class ImagesPanel(Frame):
         for i,p in enumerate(self.controls):
             p['control'].place(x=(160*i)+20, y=0, width=160, height=120)
  
-class ProcessUi(Frame):
+
+class ProcessUi(FileEditor):
     def __init__(self, master, mgr,mediator):
         super(ProcessUi, self).__init__(master, mgr,mediator)
 
@@ -300,16 +386,7 @@ class ProcessUi(Frame):
         self.mgr['Process'].completeSpec(name,spec)
         return spec
 
-
-
-                 
-
-    
-
-
-
-
-class EditorUi(Frame):
+class EditorUi(FileEditor):
     def __init__(self, master, mgr,mediator):
         super(EditorUi, self).__init__(master, mgr,mediator)
 

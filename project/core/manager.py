@@ -28,7 +28,13 @@ class Manager():
         return self.list[key]
 
     def list(self):
-        return self.list 
+        return self.list
+
+    def key(self,value):
+        if type(value).__name__ != 'type':
+            return  Helper.rreplace(type(value).__name__,self.type , '')
+        else:
+            return  Helper.rreplace(value.__name__,self.type , '')      
 
 class MainManager(Manager):
     def __init__(self):
@@ -119,8 +125,6 @@ class MainManager(Manager):
                 element = getattr(module, element_name)
                 if inspect.isclass(element):
                     self[key].add(element) 
-    
-  
 
 class ExpManager(Manager):
     def __init__(self,mgr):
@@ -340,7 +344,8 @@ class ProcessManager(Manager):
     def completeSpecTransition(self,node):        
         if 'transition' not in node:
             node['transition']=[] 
-            
+
+
     
 class UiManager(Manager):
     def __init__(self,mgr):
@@ -348,7 +353,7 @@ class UiManager(Manager):
 
     def add(self,value):
         key = Helper.rreplace(value.__name__,self.type , '')  
-        self.list[key]= value     
+        self.list[key]= value 
 
     def singleton(self,key,args={}):
         value=self.list[key]

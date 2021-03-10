@@ -18,18 +18,30 @@ class Event(object):
 
 class Mediator():
     def __init__(self):
-        self._onCommand=Event()
+        self._onMessage=Event()
 
     @property
-    def onCommand(self):
-        return self._onCommand
+    def onMessage(self):
+        return self._onMessage
 
-    @onCommand.setter
-    def onCommand(self,value):
-        self._onCommand=value           
+    @onMessage.setter
+    def onMessage(self,value):
+        self._onMessage=value           
 
-    def raiseCommand(self,sender,command,args={}):
-        self._onCommand(sender,command,args)
+    def send(self,sender,verb,resource=None,args={}):
+        self._onMessage(sender,verb,resource,args)
+
+# class Mediator():
+#     def __init__(self):
+#         self._onCommand=Event()
+#     @property
+#     def onCommand(self):
+#         return self._onCommand
+#     @onCommand.setter
+#     def onCommand(self,value):
+#         self._onCommand=value
+#     def raiseCommand(self,sender,command,args={}):
+#         self._onCommand(sender,command,args)
 
 class Helper:
     @staticmethod

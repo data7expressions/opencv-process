@@ -8,13 +8,13 @@ class UiMediatior(Mediator):
         super(UiMediatior, self).__init__()
         self._currentEditor=None
 
-    @property
-    def currentEditor(self):
-        return self._currentEditor
+    # @property
+    # def currentEditor(self):
+    #     return self._currentEditor
 
-    @currentEditor.setter
-    def currentEditor(self,value):
-        self._currentEditor=value  
+    # @currentEditor.setter
+    # def currentEditor(self,value):
+    #     self._currentEditor=value  
 
 class UiHelper():
 
@@ -82,13 +82,12 @@ class Frame(ttk.Frame):
         super(Frame, self).__init__(master)
         self.mgr = mgr
         self.mediator=mediator
-        self.mediator.onCommand+=self.onCommand
+        self.mediator.onMessage+=self.onMessage
         self.init()
         self.layout()
         
     def __del__(self):
-        self.mediator.onCommand-=self.onCommand
-        self.master.destroy()      
+        self.mediator.onMessage-=self.onMessage
 
     def init(self):
         pass
@@ -96,10 +95,9 @@ class Frame(ttk.Frame):
     def layout(self):
         pass
 
-    def onCommand(self,sender,command,args):
+    def onMessage(self,sender,verb,resource,args):
         pass
 
-    
 
 class ToolbarPanel(Frame):
     def __init__(self, master,mgr,mediator):        
@@ -107,20 +105,36 @@ class ToolbarPanel(Frame):
 
     def init(self):
         self.buttons = {}
+        self.contextButtons = {}
 
     def load(self,dic):
         for key in dic:
             item=Helper.nvl(dic[key],{})
             item['command'] = key
-            self.add(**item)
+            self.buttons[key]= self.create(**item)
 
-    def add(self,command,img=None,tootip=None):
+    def onMessage(self,sender,verb,resource,args):
+        if verb == 'add' and resource == 'command' and 'commands' in args:
+            if 'contextual' in args and args['contextual']:
+                self.loadContext(args['commands'])
+            else:
+                self.load(args['commands'])     
+
+    def loadContext(self,dic):
+        for key in self.contextButtons:
+            self.contextButtons[key].destroy()
+        for key in dic:
+            item=Helper.nvl(dic[key],{})
+            item['command'] = key
+            self.contextButtons[key]= self.create(**item)        
+
+    def create(self,command,img=None,tootip=None):
         icon = self.mgr.getIcon(Helper.nvl(img,command))
-        btn = ttk.Button(self, image=icon, command=  lambda: self.mediator.raiseCommand(command,{}) )
+        btn = ttk.Button(self, image=icon, command=  lambda: self.mediator.send(self,command))
         btn.image = icon
         btn.pack(side=tk.LEFT)
         self.createToolTip(btn,Helper.nvl(tootip,command))
-        self.buttons[command] =btn
+        return btn
 
     def createToolTip(self, widget, text):
         toolTip = ToolTip(widget)
@@ -166,48 +180,4 @@ class TreeFilePanel(Frame):
     def onSelect(self, event):
         item = self.tree.selection()[0]
         if not path.isdir(item):
-            self.mediator.raiseCommand(self,'select',{'item': item})
-
-class TabsFilePanel(Frame):
-    def __init__(self, master, mgr,mediator):
-        super(TabsFilePanel, self).__init__(master,mgr,mediator)        
-
-    def init(self):
-        self.frames = {}
-        self.tabs = ttk.Notebook(self)
-
-    def layout(self):
-        self.tabs.pack(expand=True, fill=tk.BOTH)
-
-    def onCommand(self,sender,command,args):
-        if command == 'select':
-            self.set(args['item'])
-
-    def set(self, fullpath):
-        name = path.basename(fullpath)
-        frame, tabIndex = self.getCurrent()
-        frame.set(fullpath)
-        # frame.current()
-        self.tabs.tab(tabIndex, text=name)
-
-    def getCurrent(self):
-        frame = None
-        tabIndex = None
-        s = self.tabs.select()
-        if s == '':
-            frame = self.mgr['Ui'].new('Container', {'master': self.master,'mediator': self.mediator})
-            self.tabs.add(frame)
-            self.tabs.bind("<Button-1>", self.tab_switch)
-            self.tabs.pack(expand=1, fill="both")
-            tabIndex = self.tabs.index(self.tabs.select())
-            self.frames[tabIndex] = frame
-        else:
-            tabIndex = self.tabs.index(s)
-            frame = self.frames[tabIndex]
-
-        return frame, tabIndex
-
-    def tab_switch(self, event):
-        pass
-
-  
+            self.mediator.send(self,'select','file',{'item': item})
