@@ -90,7 +90,9 @@ class MainManager(Manager):
                     for key in keys:
                         self[type].applyConfig(key,keys[key]) 
             except yaml.YAMLError as exc:
-                print(exc)               
+                print(exc)
+            except Exception as ex:
+                print(ex)                   
 
     def loadPlugin(self,pluginPath):
         
@@ -262,8 +264,8 @@ class Process:
             if 'output' in node:
                 for i,p  in enumerate(node['output']):
                     self.context['vars'][p['assig']]=result[i] if type(result) is tuple else result   
-        except:
-            print("Unexpected error:", sys.exc_info())
+        except Exception as ex:
+            print(ex)
             raise
 
     def nextNode(self,node):
@@ -292,8 +294,8 @@ class ProcessManager(Manager):
             thread = threading.Thread(target=self._process_start, args=(instance,))
             self._instances[id]={"instance":instance,"thread":thread}
             thread.start()
-        except:
-            print("process "+key+" error:", sys.exc_info())
+        except Exception as ex:
+            print(ex)
             raise
         
         return instance

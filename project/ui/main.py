@@ -259,8 +259,8 @@ class ProcessGraphPanel(Frame):
                 transition = node['transition']
                 for p in transition:
                     f.edge(source,p['target'])
-        except:
-            print(sys.exc_info())
+        except Exception as ex:
+            print(ex)
         f.render()
         return filename+'.png'
 
@@ -316,6 +316,8 @@ class ControlsPanel(Frame):
             for k in self.mgr['Enum'][enum].values.keys():
                 values.append(k) 
             return ttk.Combobox(master,values=values)
+            # ver como seleccionar el valor de acuerdo al item seleccionado en el combo
+            # https://stackoverflow.com/questions/54283975/python-tkinter-combobox-and-dictionary
         else:
             return tk.Label(master,text=type)               
 
@@ -394,8 +396,10 @@ class ProcessUi(FileEditor):
                     l = data['Process']
                     name = list(l.keys())[0]
                     spec = l[name]
-            except yaml.YAMLError as exc:
-                print(exc)
+            except yaml.YAMLError as ex:
+                print(ex)
+            except Exception as ex:
+                print(ex)    
 
         self.mgr['Process'].completeSpec(name,spec)
         return spec

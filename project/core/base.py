@@ -31,17 +31,25 @@ class Mediator():
     def send(self,sender,verb,resource=None,args={}):
         self._onMessage(sender,verb,resource,args)
 
-# class Mediator():
-#     def __init__(self):
-#         self._onCommand=Event()
-#     @property
-#     def onCommand(self):
-#         return self._onCommand
-#     @onCommand.setter
-#     def onCommand(self,value):
-#         self._onCommand=value
-#     def raiseCommand(self,sender,command,args={}):
-#         self._onCommand(sender,command,args)
+class Context:
+    def __init__(self,vars={}):
+        self._vars=vars 
+        self._onChange=Event()
+
+    @property
+    def onChange(self):
+        return self._onChange
+    @onChange.setter
+    def onChange(self,value):
+        self._onChange=value  
+
+    def get(self,key):
+        return self._vars[key]
+    def set(self,key,value):
+        oldValue = self._vars[key]
+        if oldValue != value:
+            self._vars['key']=value
+            self._onChange(key,value,oldValue)
 
 class Helper:
     @staticmethod
