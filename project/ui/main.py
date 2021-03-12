@@ -24,7 +24,7 @@ class MainUi(Frame):
         self.toolbar = ToolbarPanel(self, self.mgr,self.mediator)               
         self.tree = TreeFilePanel(self, self.mgr,self.mediator)        
         self.tabs = TabsFilePanel(self, self.mgr,self.mediator)
-        self.toolbar.load(self.config['Command'])
+        self.toolbar.load(self.config['Commands'])
 
     @property
     def config(self):
@@ -123,7 +123,7 @@ class ContainerUi(Frame):
         if self.currentEditor != None:
             self.currentEditor.current = value
             if value :                               
-                commands = self.currentEditor.config['Command'] if 'Command' in self.currentEditor.config else {} 
+                commands = self.currentEditor.config['Commands'] if 'Commands' in self.currentEditor.config else {} 
                 if commands != None:
                     self.mediator.send(self,'add','command',{'commands':commands,'contextual': True})
 
@@ -349,6 +349,9 @@ class ProcessUi(FileEditor):
         self.graph = ProcessGraphPanel(self,self.mgr,self.mediator)
         self.controls = ControlsPanel(self,self.mgr,self.mediator)
         self.images = ImagesPanel(self,self.mgr,self.mediator)
+        self.spec = None
+        self.processInstanceId = None
+        self.processInstance = None
 
     def layout(self):
         tk.Grid.rowconfigure(self, 0, weight=3)
@@ -363,12 +366,23 @@ class ProcessUi(FileEditor):
         self.pack(fill=tk.BOTH, expand=tk.YES)
 
     def set(self, fullpath):
-        spec = self.getProcess(fullpath)
-        images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='image', spec['vars'].items()))
-        others = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='image', spec['vars'].items()))
-        self.graph.set(spec)
+        self.spec = self.getProcess(fullpath)
+        images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='image', self.spec['vars'].items()))
+        others = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='image', self.spec['vars'].items()))
+        self.graph.set(self.spec)
         self.images.set(images)
         self.controls.set(others)
+
+    def onMessage(self,sender,verb,resource,args): 
+        if self.current == False:
+            return
+        if resource == 'process' and self.spec != None:
+            if verb == 'start':
+                self.process_start()
+            elif verb == 'stop':
+                self.process_stop()
+            elif verb == 'pause':
+                self.process_pause()         
 
     def getProcess(self, processPath):
         name = None
@@ -385,6 +399,18 @@ class ProcessUi(FileEditor):
 
         self.mgr['Process'].completeSpec(name,spec)
         return spec
+
+    def process_start(self):
+        context = {'vars':{'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
+                          ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'}
+                  }
+
+        self.processInstance = self.mgr['Process'].start(self.spec['name'],context)        
+
+    def process_stop(self):
+        pass
+    def process_pause(self):
+        pass
 
 class EditorUi(FileEditor):
     def __init__(self, master, mgr,mediator):

@@ -201,11 +201,12 @@ class HelperManager(Manager):
         self.list[key]= value       
 
 class Process:
-    def __init__(self,mgr,parent,spec,context):        
-        self.mgr=mgr
+    def __init__(self,id,parent,spec,context,mgr):
+        self.id=id 
         self.parent=parent
         self.spec=spec
-        self.context=context 
+        self.context=context      
+        self.mgr=mgr       
 
     def solveParams(self,params,context):
         return self.mgr['Exp'].solveParams(params,context)            
@@ -244,9 +245,11 @@ class Process:
         elif type == 'Task':
             self.executeTask(node)
             self.nextNode(node)
+
+        print('executed:'+key)    
         
     def executeEnd(self,node):
-        print('End')
+        pass
 
     def executeTask(self,node):
         try:
@@ -273,16 +276,33 @@ class Process:
             else:
                 self.execute(p['target'])  
     
+import uuid
+import threading
+
 class ProcessManager(Manager):
     def __init__(self,mgr):
-        self._instances= []
+        self._instances= {}
         super(ProcessManager,self).__init__(mgr)    
 
-    def start(self,key,context):
+    def start(self,key,context,parent=None):
         spec=self.list[key]
-        instance=Process(self.mgr,self,spec,context)
-        self._instances.append(instance)
+        id=str(uuid.uuid4())
+        instance=Process(id,parent,spec,context,self.mgr)
+        try:
+            thread = threading.Thread(target=self._process_start, args=(instance,))
+            self._instances[id]={"instance":instance,"thread":thread}
+            thread.start()
+        except:
+            print("process "+key+" error:", sys.exc_info())
+            raise
+        
+        return instance
+
+    def _process_start(self,instance):
         instance.start()
+
+    def getInstance(self,id):
+        return self._instances[id]
 
     def applyConfig(self,key,value):
         self.completeSpec(key,value)
@@ -293,7 +313,6 @@ class ProcessManager(Manager):
         for key in spec['nodes']:
             self.completeSpecNode(spec['nodes'][key])
         self.completeSpecVars(spec)
-
     def completeSpecVars(self,spec):
         vars={}
         if 'input' in spec:
@@ -311,14 +330,12 @@ class ProcessManager(Manager):
                     for p in node['output']:
                         vars[p['assig']]={'type':p['type'],'bind':(True if p['assig'] in spec['bind'] else False )} 
         spec['vars']=vars
-            
     def completeSpecNode(self,node):
         type=node['type'] 
         if type == 'Start':self.completeSpecNodeStart(node)
         elif type == 'End':self.completeSpecNodeEnd(node)            
         elif type == 'Task': self.completeSpecNodeTask(node) 
         return self.completeSpecNodeDefault(node) 
-
     def completeSpecNodeDefault(self,node):
         self.completeSpecTransition(node)
     def completeSpecNodeStart(self,node):
@@ -339,8 +356,6 @@ class ProcessManager(Manager):
             
         self.completeSpecTransition(node)        
         return node
-
-   
     def completeSpecTransition(self,node):        
         if 'transition' not in node:
             node['transition']=[] 

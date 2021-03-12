@@ -6,11 +6,16 @@ Config:
     Process:
       #la idea es usar la extension ypml 
       extensions: [yml]
-      Command:       
-        start:  
+      Commands:       
+      - command: start
+        resource: process
+      - command: pause
+        resource: process
+      - command: stop
+        resource: process   
     Editor:
       extensions: [yaml]
     Main:
-      Command:
-        new:
-        open: 
+      Commands:
+      - command: new
+      - command: open 

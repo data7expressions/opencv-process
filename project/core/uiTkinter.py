@@ -104,14 +104,12 @@ class ToolbarPanel(Frame):
         super(ToolbarPanel,self).__init__(master,mgr,mediator)        
 
     def init(self):
-        self.buttons = {}
-        self.contextButtons = {}
+        self.buttons = []
+        self.contextButtons = []
 
-    def load(self,dic):
-        for key in dic:
-            item=Helper.nvl(dic[key],{})
-            item['command'] = key
-            self.buttons[key]= self.create(**item)
+    def load(self,commands):
+        for command in commands:            
+            self.buttons.append(self.create(**command))
 
     def onMessage(self,sender,verb,resource,args):
         if verb == 'add' and resource == 'command' and 'commands' in args:
@@ -120,17 +118,15 @@ class ToolbarPanel(Frame):
             else:
                 self.load(args['commands'])     
 
-    def loadContext(self,dic):
-        for key in self.contextButtons:
-            self.contextButtons[key].destroy()
-        for key in dic:
-            item=Helper.nvl(dic[key],{})
-            item['command'] = key
-            self.contextButtons[key]= self.create(**item)        
+    def loadContext(self,commands):
+        for contextButton in self.contextButtons:
+            contextButton.destroy()
+        for command in commands:
+            self.contextButtons.append(self.create(**command))        
 
-    def create(self,command,img=None,tootip=None):
+    def create(self,command,resource=None,img=None,tootip=None):
         icon = self.mgr.getIcon(Helper.nvl(img,command))
-        btn = ttk.Button(self, image=icon, command=  lambda: self.mediator.send(self,command))
+        btn = ttk.Button(self, image=icon, command=  lambda: self.mediator.send(self,command,resource))
         btn.image = icon
         btn.pack(side=tk.LEFT)
         self.createToolTip(btn,Helper.nvl(tootip,command))

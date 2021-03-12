@@ -51,5 +51,5 @@ def test(mgr):
 
 if __name__ == '__main__':
     mgr=init()
-    test(mgr)
+    # test(mgr)
     ui(mgr)
