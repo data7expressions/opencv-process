@@ -104,9 +104,6 @@ class TabsFilePanel(Frame):
 
         return frame, tabIndex
 
-    
-
-
 class ContainerUi(Frame):
     def __init__(self, master, mgr,mediator):        
         super(ContainerUi, self).__init__(master, mgr,mediator) 
@@ -152,7 +149,6 @@ class ContainerUi(Frame):
         self.currentEditor = self.mgr.Ui.new(key, {'master': self,'mediator':self.mediator})
         return self.currentEditor
 
-
 class FileEditor(Frame):
     def __init__(self, master, mgr,mediator):        
         super(FileEditor, self).__init__(master, mgr,mediator)
@@ -172,7 +168,6 @@ class FileEditor(Frame):
     def current(self,value):
         self._current=value      
 
-
 class ImageUi(FileEditor):
     def __init__(self, master, mgr,mediator):
         super(ImageUi, self).__init__(master, mgr,mediator)
@@ -191,8 +186,6 @@ class ImageUi(FileEditor):
         self.panel.image = img
         self.panel.place(x=0, y=0)
         self.panel.pack(expand=1, fill="both")
-
-
 
 class ProcessGraphPanel(Frame):
     def __init__(self, master,mgr,mediator):
