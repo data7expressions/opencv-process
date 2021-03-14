@@ -2,19 +2,19 @@
 class Event(object): 
   
     def __init__(self): 
-        self.__eventhandlers = [] 
+        self.__handlers = [] 
   
     def __iadd__(self, handler): 
-        self.__eventhandlers.append(handler) 
+        self.__handlers.append(handler) 
         return self
   
     def __isub__(self, handler): 
-        self.__eventhandlers.remove(handler) 
+        self.__handlers.remove(handler) 
         return self
   
     def __call__(self, *args, **keywargs): 
-        for eventhandler in self.__eventhandlers: 
-            eventhandler(*args, **keywargs) 
+        for handler in self.__handlers: 
+            handler(*args, **keywargs) 
 
 class Mediator():
     def __init__(self):
@@ -31,9 +31,11 @@ class Mediator():
     def send(self,sender,verb,resource=None,args={}):
         self._onMessage(sender,verb,resource,args)
 
-class Context:
-    def __init__(self,vars={}):
-        self._vars=vars 
+
+# https://www.semicolonworld.com/question/43363/how-to-ldquo-perfectly-rdquo-override-a-dict
+class Context(dict):
+    def __init__(self, data={}):
+        super(Context, self).__init__(data)
         self._onChange=Event()
 
     @property
@@ -41,15 +43,13 @@ class Context:
         return self._onChange
     @onChange.setter
     def onChange(self,value):
-        self._onChange=value  
+        self._onChange=value     
+    
+    def __setitem__(self, key, value):
+        oldValue = self[key] if key in self else None        
+        super(Context, self).__setitem__(key, value)
+        self._onChange(key,value,oldValue)   
 
-    def get(self,key):
-        return self._vars[key]
-    def set(self,key,value):
-        oldValue = self._vars[key]
-        if oldValue != value:
-            self._vars['key']=value
-            self._onChange(key,value,oldValue)
 
 class Helper:
     @staticmethod

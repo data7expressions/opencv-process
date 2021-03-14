@@ -20,17 +20,17 @@ def init():
 
    mgr = MainManager()
    mgr.init(plugins) 
-   mgr.context={ 'workspace' : (path.join(getcwd(),'data/workspace')) }
+   mgr.context['workspace']=path.join(getcwd(),'data/workspace')
 
    return mgr
 
 def ui(mgr):
 
-    mgr['Ui'].add(MainUi)
-    mgr['Ui'].add(ContainerUi)
-    mgr['Ui'].add(ImageUi)
-    mgr['Ui'].add(ProcessUi)
-    mgr['Ui'].add(EditorUi)
+    mgr.Ui.add(MainUi)
+    mgr.Ui.add(ContainerUi)
+    mgr.Ui.add(ImageUi)
+    mgr.Ui.add(ProcessUi)
+    mgr.Ui.add(EditorUi)
 
     mgr.applyConfig(path.join(rootpath,'project/ui/config.yaml'))
     
@@ -39,15 +39,13 @@ def ui(mgr):
     iconProvider= IconProvider(path.join(getcwd(),'project/assets/icons'))
     mgr.addIconProvider(iconProvider)
    
-    main=mgr['Ui'].singleton('Main',{'master':tk})
-    main.init()
-    main.layout()
+    main=mgr.Ui.singleton('Main',{'master':tk})
     main.set(mgr.context['workspace'])
     main.mainloop()    
 
 def test(mgr):
-    mgr['Test']['List'].execute()
-    mgr['Test']['Process'].execute()
+    mgr.Test.List.execute()
+    mgr.Test.Process.execute()
 
 if __name__ == '__main__':
     mgr=init()

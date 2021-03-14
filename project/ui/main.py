@@ -28,7 +28,7 @@ class MainUi(Frame):
 
     @property
     def config(self):
-        return self.mgr['Config']['Ui']['Main']    
+        return self.mgr.Config.Ui['Main']    
 
     def layout(self):
         # https://recursospython.com/guias-y-manuales/posicionar-elementos-en-tkinter/
@@ -92,7 +92,7 @@ class TabsFilePanel(Frame):
         tabIndex = None
         s = self.tabs.select()
         if s == '':
-            frame = self.mgr['Ui'].new('Container', {'master': self.master,'mediator': self.mediator})
+            frame = self.mgr.Ui.new('Container', {'master': self.master,'mediator': self.mediator})
             self.tabs.add(frame)
             self.tabs.bind("<Button-1>", self.tab_switch)
             self.tabs.pack(expand=1, fill="both")
@@ -136,20 +136,20 @@ class ContainerUi(Frame):
         filename, fileExtension = path.splitext(file)
         fileExtension = fileExtension.replace('.', '')
         key = None
-        for key in self.mgr['Config']['Ui']:
-            extensions = self.mgr['Config']['Ui'][key]['extensions']
+        for key in self.mgr.Config.Ui:
+            extensions = self.mgr.Config.Ui[key]['extensions']
             if fileExtension in extensions:
                 break
         if key == None:
             key = 'Editor'
 
         if self.currentEditor != None:
-            currentKey = self.mgr['Ui'].key(self.currentEditor)
+            currentKey = self.mgr.Ui.key(self.currentEditor)
             if key == currentKey:
                 return self.currentEditor
             else:
                 self.currentEditor.destroy()      
-        self.currentEditor = self.mgr['Ui'].new(key, {'master': self,'mediator':self.mediator})
+        self.currentEditor = self.mgr.Ui.new(key, {'master': self,'mediator':self.mediator})
         return self.currentEditor
 
 
@@ -160,8 +160,8 @@ class FileEditor(Frame):
 
     @property
     def config(self):
-        key = self.mgr['Ui'].key(self)
-        return self.mgr['Config']['Ui'][key]
+        key = self.mgr.Ui.key(self)
+        return self.mgr.Config.Ui[key]
         
 
     @property
@@ -313,7 +313,7 @@ class ControlsPanel(Frame):
         elif type.startswith('Enum.'):
             enum=type.replace('Enum.','')
             values= []
-            for k in self.mgr['Enum'][enum].values.keys():
+            for k in self.mgr.Enum[enum].values.keys():
                 values.append(k) 
             return ttk.Combobox(master,values=values)
             # ver como seleccionar el valor de acuerdo al item seleccionado en el combo
@@ -321,12 +321,28 @@ class ControlsPanel(Frame):
         else:
             return tk.Label(master,text=type)               
 
+#  https://realpython.com/python-descriptors/
+class ImageCtl(tk.Label):
+    def __init__(self, master=None, cnf={}, **kw):
+        super(ImageCtl,self).__init__(master, cnf,**kw)
+
+    @property
+    def value(self):
+        return self.image
+    @value.setter
+    def value(self,value):
+        _image = Image.fromarray(value)
+        _image = _image.resize((self.winfo_width(), self.winfo_height()), Image.ANTIALIAS)
+        image = ImageTk.PhotoImage(_image)
+        self.configure(image=image)
+        self.image = image
+
 class ImagesPanel(Frame):
     def __init__(self, master,mgr,mediator):
         super(ImagesPanel,self).__init__(master, mgr,mediator)
 
     def init(self):
-        self.controls=[]
+        self._controls={}
 
     def set(self, vars):
         self.initControls(vars)
@@ -334,14 +350,19 @@ class ImagesPanel(Frame):
 
     def initControls(self,vars):        
         for name in vars:
-            var = vars[name]
-            control={'var':var,'control':tk.Label(self,text =name,width=160,height=120)}
-            self.controls.append(control)     
+            self._controls[name] = ImageCtl(self,text =name,width=160,height=120)
             
     def layoutControls(self):
-        for i,p in enumerate(self.controls):
-            p['control'].place(x=(160*i)+20, y=0, width=160, height=120)
- 
+        i=0
+        for key in self._controls:
+            self._controls[key].place(x=(160*i)+20, y=0, width=160, height=120)
+            i=i+1
+        # for i,p in enumerate(self.controls):
+        #     p['control'].place(x=(160*i)+20, y=0, width=160, height=120)
+
+    def changeValue(self,key,value):
+        if key in self._controls:
+            self._controls[key].value =value    
 
 class ProcessUi(FileEditor):
     def __init__(self, master, mgr,mediator):
@@ -349,10 +370,9 @@ class ProcessUi(FileEditor):
 
     def init(self):
         self.graph = ProcessGraphPanel(self,self.mgr,self.mediator)
-        self.controls = ControlsPanel(self,self.mgr,self.mediator)
-        self.images = ImagesPanel(self,self.mgr,self.mediator)
+        self.controlsPanel = ControlsPanel(self,self.mgr,self.mediator)
+        self.imagesPanel = ImagesPanel(self,self.mgr,self.mediator)
         self.spec = None
-        self.processInstanceId = None
         self.processInstance = None
 
     def layout(self):
@@ -361,19 +381,19 @@ class ProcessUi(FileEditor):
         self.graph.grid(row=0, column=0, sticky="nsew")
         tk.Grid.rowconfigure(self, 0, weight=3)
         tk.Grid.columnconfigure(self, 1, weight=1)
-        self.controls.grid(row=0, column=1, sticky="nsew")
+        self.controlsPanel.grid(row=0, column=1, sticky="nsew")
         tk.Grid.rowconfigure(self, 1, weight=1)
         tk.Grid.columnconfigure(self, 0, weight=1)
-        self.images.grid(row=1, column=0, sticky="nsew")
+        self.imagesPanel.grid(row=1, column=0, sticky="nsew")
         self.pack(fill=tk.BOTH, expand=tk.YES)
 
     def set(self, fullpath):
         self.spec = self.getProcess(fullpath)
-        images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='image', self.spec['vars'].items()))
-        others = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='image', self.spec['vars'].items()))
+        self.images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='image', self.spec['vars'].items()))
+        self.controls = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='image', self.spec['vars'].items()))
         self.graph.set(self.spec)
-        self.images.set(images)
-        self.controls.set(others)
+        self.imagesPanel.set(self.images)
+        self.controlsPanel.set(self.controls)
 
     def onMessage(self,sender,verb,resource,args): 
         if self.current == False:
@@ -401,20 +421,29 @@ class ProcessUi(FileEditor):
             except Exception as ex:
                 print(ex)    
 
-        self.mgr['Process'].completeSpec(name,spec)
+        self.mgr.Process.completeSpec(name,spec)
         return spec
 
     def process_start(self):
-        context = {'vars':{'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
-                          ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'}
+        context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
+                  ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
                   }
+        self.processInstance = self.mgr.Process.create(self.spec['name'],context)
+        self.processInstance.context.onChange += self.process_context_onChange 
+        self.mgr.Process.start(self.processInstance.id)        
 
-        self.processInstance = self.mgr['Process'].start(self.spec['name'],context)        
+     
 
     def process_stop(self):
-        pass
+        if self.processInstance != None:
+           self.mgr.Process.stop(self.processInstance.id) 
     def process_pause(self):
-        pass
+        if self.processInstance != None:
+           self.mgr.Process.pause(self.processInstance.id) 
+
+    def process_context_onChange(self,key,value,oldValue):
+        if key in self.images:
+            self.imagesPanel.changeValue(key,value)     
 
 class EditorUi(FileEditor):
     def __init__(self, master, mgr,mediator):

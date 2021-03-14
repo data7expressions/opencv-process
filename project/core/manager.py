@@ -9,26 +9,30 @@ import tkinter as tk
 from os import path,listdir
 from .base import *
 
-
+# https://www.pythonprogramming.in/attribute-assignment-using-getattr-and-setattr-in-python.html
+# aplicar __getattr__ and __setattr__ para los managers
 
 class Manager():
     def __init__(self,mgr):
-        self.list = {}
+        self._list = {}
         self.mgr=mgr
         self.type = Helper.rreplace(type(self).__name__, 'Manager', '') 
 
+    def __getattr__(self, key):
+        if key in self._list: return self._list[key]
+        else: return None
+    def __getitem__(self,key):
+        return self._list[key]        
+    @property
+    def list(self):
+        return self._list
+
     def add(self,value):
         key = Helper.rreplace(value.__name__,self.type , '')  
-        self.list[key]= value(self.mgr)
+        self._list[key]= value(self.mgr)
 
     def applyConfig(self,key,value):
-        self.list[key]= value
-
-    def __getitem__(self,key):
-        return self.list[key]
-
-    def list(self):
-        return self.list
+        self._list[key]= value    
 
     def key(self,value):
         if type(value).__name__ != 'type':
@@ -37,10 +41,19 @@ class Manager():
             return  Helper.rreplace(value.__name__,self.type , '')      
 
 class MainManager(Manager):
-    def __init__(self):
-        self._context={}
+    def __init__(self,context={}):
+        self._context=Context(context)
         super(MainManager,self).__init__(self)
         self.iconProvider=None
+
+    @property
+    def context(self):
+        return self._context
+    @context.setter
+    def context(self,value):
+        self._context=value  
+
+      
 
     def init(self,plugins=[]):
         
@@ -64,22 +77,17 @@ class MainManager(Manager):
         if self.iconProvider is None: return None
         return self.iconProvider.getIcon(key) 
 
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self,value):
-        self._context=value    
-    
+    def __getattr__(self, key):
+        if key=='Manager': return self      
+        if key in self._list: return self._list[key]
+        else: return None
     def __getitem__(self,key):
-        _key=key
-        if _key=='Manager': return self
-        return self.list[_key] 
+        if key=='Manager': return self
+        return self._list[key] 
 
     def add(self,type):
         key = Helper.rreplace(type.__name__,'Manager' , '')        
-        self.list[key]= type(self.mgr)
+        self._list[key]= type(self.mgr)
 
     def applyConfig(self,configPath):
         with open(configPath, 'r') as stream:
@@ -114,7 +122,7 @@ class MainManager(Manager):
             self.loadTypes('Manager',module)
         """Load others types on modules loaded"""
         for module in modules:
-            for key in self.list.keys():
+            for key in self._list.keys():
                 self.loadTypes(key,module)
         """Load all configurations"""        
         list = glob.glob(path.join(pluginPath,'**/*.y*ml'),recursive=True)
@@ -136,10 +144,10 @@ class ExpManager(Manager):
         if type(exp) is str: 
             if exp.startswith('$'):
                 variable=exp.replace('$','')
-                return context['vars'][variable]
+                return context[variable]
             elif exp.startswith('enum.'):
                 arr=exp.replace('enum.','').split('.')
-                return self.mgr['Enum'][arr[0]].value(arr[1])
+                return self.mgr.Enum[arr[0]].value(arr[1])
         return exp
 
     def var(self,exp):
@@ -174,21 +182,18 @@ class EnumManager(Manager):
         super(EnumManager,self).__init__(mgr)
 
     def applyConfig(self,key,value):
-        self.list[key]= Enum(value) 
+        self._list[key]= Enum(value) 
 
 class ConfigManager(Manager):
     def __init__(self,mgr):
         super(ConfigManager,self).__init__(mgr)
 
     def applyConfig(self,key,value):
-        self.list[key]= value 
+        self._list[key]= value 
 
 class TaskManager(Manager):
     def __init__(self,mgr):
         super(TaskManager,self).__init__(mgr)
-
-    # def applyConfig(self,key,value):
-    #     self.list[key].setSpec(value)
 
 class TestManager(Manager):
     def __init__(self,mgr):
@@ -200,42 +205,58 @@ class HelperManager(Manager):
 
     def add(self,value):
         key = Helper.rreplace(value.__name__,self.type , '')  
-        self.list[key]= value       
+        self._list[key]= value       
 
 class Process:
     def __init__(self,id,parent,spec,context,mgr):
-        self.id=id 
-        self.parent=parent
-        self.spec=spec
-        self.context=context      
-        self.mgr=mgr       
+        self._id=id 
+        self._parent=parent
+        self._spec=spec
+        self._context=Context(context)      
+        self.mgr=mgr
+
+    @property
+    def id(self):
+        return self._id
+    @property
+    def parent(self):
+        return self._parent
+    @property
+    def spec(self):
+        return self._spec        
+    @property
+    def context(self):
+        return self._context
+
+              
 
     def solveParams(self,params,context):
-        return self.mgr['Exp'].solveParams(params,context)            
+        return self.mgr.Exp.solveParams(params,context)            
 
     def node(self,key):
-        return self.spec['nodes'][key]    
+        return self._spec['nodes'][key]    
 
     def start(self):
         self.init()
-        starts = dict(filter(lambda p: p[1]['type'] == 'Start', self.spec['nodes'].items()))
+        starts = dict(filter(lambda p: p[1]['type'] == 'Start', self._spec['nodes'].items()))
         for name in starts:
             start = starts[name]
             if 'exp' in start:
-                if self.mgr['Exp'].eval(start['exp']):
+                if self.mgr.Exp.eval(start['exp']):
                     self.execute(name)
             else:
                 self.execute(name)        
 
     def init(self):
-        if 'init' in self.spec:
-            self.solveParams(self.spec['init'],self.context)
-            for p in self.spec['init']:
+        if 'init' in self._spec:
+            self.solveParams(self._spec['init'],self._context)
+            for p in self._spec['init']:
                 print(p)
-                self.context['vars'][p['name']]=p['value']
+                self._context[p['name']]=p['value']
 
     def restart(self):
-        self.execute(self.context.current)
+        pass
+        # self.execute(self._context.current)
 
     def execute(self,key):
         node=self.node(key)
@@ -255,15 +276,15 @@ class Process:
 
     def executeTask(self,node):
         try:
-            taskManager = self.mgr['Task'][node['task']]
-            self.solveParams(node['input'],self.context)
+            taskManager = self.mgr.Task[node['task']]
+            self.solveParams(node['input'],self._context)
             input={}
             for p in node['input']:
                 input[p['name']]=p['value'] 
             result=taskManager.execute(**input)
             if 'output' in node:
                 for i,p  in enumerate(node['output']):
-                    self.context['vars'][p['assig']]=result[i] if type(result) is tuple else result   
+                    self._context[p['assig']]=result[i] if type(result) is tuple else result   
         except Exception as ex:
             print(ex)
             raise
@@ -273,7 +294,7 @@ class Process:
         transition = node['transition']        
         for p in transition:
             if 'exp' in transition:
-                if self.mgr['Exp'].eval(p['exp']):
+                if self.mgr.Exp.eval(p['exp']):
                     self.execute(p['target']) 
             else:
                 self.execute(p['target'])  
@@ -284,31 +305,36 @@ import threading
 class ProcessManager(Manager):
     def __init__(self,mgr):
         self._instances= {}
-        super(ProcessManager,self).__init__(mgr)    
+        super(ProcessManager,self).__init__(mgr)
 
-    def start(self,key,context,parent=None):
-        spec=self.list[key]
+    
+    def create(self,key,context,parent=None):
+        spec=self._list[key]
         id=str(uuid.uuid4())
-        instance=Process(id,parent,spec,context,self.mgr)
+        process = Process(id,parent,spec,context,self.mgr)
+        self._instances[id]= {"process":process }
+        return process
+
+    def start(self,id):        
         try:
-            thread = threading.Thread(target=self._process_start, args=(instance,))
-            self._instances[id]={"instance":instance,"thread":thread}
+            instance = self._instances[id]
+            thread = threading.Thread(target=self._process_start, args=(instance["process"],))
+            instance["thread"]=thread
             thread.start()
+            return instance
         except Exception as ex:
             print(ex)
-            raise
-        
-        return instance
+            raise        
 
-    def _process_start(self,instance):
-        instance.start()
+    def _process_start(self,process):
+        process.start()
 
     def getInstance(self,id):
         return self._instances[id]
 
     def applyConfig(self,key,value):
         self.completeSpec(key,value)
-        self.list[key]= value
+        self._list[key]= value
 
     def completeSpec(self,key,spec):
         spec['name']= key        
@@ -325,7 +351,7 @@ class ProcessManager(Manager):
                 node=spec['nodes'][key]
                 if 'input' in node:
                     for p in node['input']:
-                        var =self.mgr['Exp'].var(p['exp'])
+                        var =self.mgr.Exp.var(p['exp'])
                         if var != None:
                             vars[var]={'type':p['type'],'bind':(True if var in spec['bind'] else False )}  
                 if 'output' in node:
@@ -346,7 +372,7 @@ class ProcessManager(Manager):
         self.completeSpecTransition(node)
     def completeSpecNodeTask(self,node):
 
-        taskSpec=self.mgr['Config']['Task'][node['task']]
+        taskSpec=self.mgr.Config['Task'][node['task']]
 
         if 'input' not in taskSpec: node['input']=[]        
         for p in node['input']:
@@ -370,20 +396,20 @@ class UiManager(Manager):
 
     def add(self,value):
         key = Helper.rreplace(value.__name__,self.type , '')  
-        self.list[key]= value 
+        self._list[key]= value 
 
     def singleton(self,key,args={}):
-        value=self.list[key]
+        value=self._list[key]
         if type(value).__name__ != 'type':
             return value
 
         args['mgr']=self.mgr
         instance=value(**args)
-        self.list[key]= instance
+        self._list[key]= instance
         return instance
 
     def new(self,key,args={}):
-        value=self.list[key]
+        value=self._list[key]
         _class=None
         if type(value).__name__ == 'type':
             _class=value
