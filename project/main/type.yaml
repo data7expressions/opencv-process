@@ -41,7 +41,7 @@ Type:
   string:
     ctl: textbox
   enum:
-    ctl: enum 
+    ctl: Enum 
   point:
     struct:
       x: int
@@ -70,7 +70,7 @@ Type:
       b: byte
     ctl: rgb        
   image:
-    ctl: image 
+    ctl: ImageCtl 
   filename:
     base: string
     ctl: filename

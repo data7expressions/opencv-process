@@ -28,9 +28,12 @@ def ui(mgr):
 
     mgr.Ui.add(MainUi)
     mgr.Ui.add(ContainerUi)
-    mgr.Ui.add(ImageUi)
-    mgr.Ui.add(ProcessUi)
-    mgr.Ui.add(EditorUi)
+    mgr.Ui.add(FileImageUi)
+    mgr.Ui.add(FileProcessUi)
+    mgr.Ui.add(FileEditorUi)
+
+    mgr.Ui.add(CvImageUi)
+    mgr.Ui.add(EnumUi) 
 
     mgr.applyConfig(path.join(rootpath,'project/ui/config.yaml'))
     
@@ -39,7 +42,7 @@ def ui(mgr):
     iconProvider= IconProvider(path.join(getcwd(),'project/assets/icons'))
     mgr.addIconProvider(iconProvider)
    
-    main=mgr.Ui.singleton('Main',{'master':tk})
+    main=mgr.Ui.singleton('Main',master=tk)
     main.set(mgr.context['workspace'])
     main.mainloop()    
 

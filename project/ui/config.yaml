@@ -1,9 +1,9 @@
 
 Config:
   Ui:
-    Image:
+    FileImage:
       extensions: [jpg,png,gif]
-    Process:
+    FileProcess:
       #la idea es usar la extension ypml 
       extensions: [yml]
       Commands:       
@@ -13,7 +13,7 @@ Config:
         resource: process
       - command: stop
         resource: process   
-    Editor:
+    FileEditor:
       extensions: [yaml]
     Main:
       Commands:

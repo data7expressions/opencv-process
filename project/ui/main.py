@@ -92,7 +92,7 @@ class TabsFilePanel(Frame):
         tabIndex = None
         s = self.tabs.select()
         if s == '':
-            frame = self.mgr.Ui.new('Container', {'master': self.master,'mediator': self.mediator})
+            frame = self.mgr.Ui.new('Container', master=self.master,mediator=self.mediator)
             self.tabs.add(frame)
             self.tabs.bind("<Button-1>", self.tab_switch)
             self.tabs.pack(expand=1, fill="both")
@@ -146,7 +146,7 @@ class ContainerUi(Frame):
                 return self.currentEditor
             else:
                 self.currentEditor.destroy()      
-        self.currentEditor = self.mgr.Ui.new(key, {'master': self,'mediator':self.mediator})
+        self.currentEditor = self.mgr.Ui.new(key, master=self,mediator=self.mediator)
         return self.currentEditor
 
 class FileEditor(Frame):
@@ -158,7 +158,6 @@ class FileEditor(Frame):
     def config(self):
         key = self.mgr.Ui.key(self)
         return self.mgr.Config.Ui[key]
-        
 
     @property
     def current(self):
@@ -168,9 +167,9 @@ class FileEditor(Frame):
     def current(self,value):
         self._current=value      
 
-class ImageUi(FileEditor):
+class FileImageUi(FileEditor):
     def __init__(self, master, mgr,mediator):
-        super(ImageUi, self).__init__(master, mgr,mediator)
+        super(FileImageUi, self).__init__(master, mgr,mediator)
 
     def init(self):
         self.panel = tk.Label(self)
@@ -266,100 +265,128 @@ class ProcessGraphPanel(Frame):
         self.panel.place(x=0, y=0)
         self.panel.pack(expand=1, fill="both")
 
+class Control(ttk.Frame):
+    def __init__(self,type,var,varName,mgr,master=None,**kw):
+        super(Control, self).__init__(master,**kw)
+        self.mgr = mgr
+        self._type = type
+        self._var = var
+        self._varName = varName
+
+    def onChanged(self, event):
+        self.event_generate('<<Changed>>')
+
+    @property
+    def type(self):
+        return self._type
+    @property
+    def var(self):
+        return self._var
+    @property
+    def varName(self):
+        return self._varName         
+ 
+class EnumUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(EnumUi, self).__init__(type,var,varName,mgr,master,**kw)
+        
+        self.lbl = tk.Label(self,height=1)
+        self.lbl.pack(fill='x')
+        self.lbl.config(text=varName)        
+
+        enumName=var['type'].replace('Enum.','')
+        self.enum= self.mgr.Enum[enumName]
+        self.cmb = ttk.Combobox(self,values=sorted(self.enum.values.keys()))       
+        self.cmb.pack(fill='both', expand=1)
+        self.cmb.bind('<<ComboboxSelected>>',self.onChanged)
+        self.pack()    
+
+    def get(self):                              
+        return self.enum.values[self.get_key()]
+
+    def get_key(self):
+        return self.cmb.get()
+
+    def set(self,value):
+        key=None 
+        for k in self.enum.values: 
+            if self.enum.values[k]== value:
+                key=k
+                break
+        if key != None:
+           self.cmb.set(key)    
+
+#  https://realpython.com/python-descriptors/
+class CvImageUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None, **kw):
+        super(CvImageUi, self).__init__(type,var,varName,mgr,master,**kw)
+               
+        self.lblTitle = tk.Label(self,height=1,bg="blue")
+        self.lblTitle.pack(fill='x')
+        self.lblTitle.config(text=varName)        
+
+        self.lblImage = tk.Label(self,bg="black")        
+        self.lblImage.pack(fill='both', expand=1)
+        self.pack()
+   
+    def get(self): 
+        return self.lblImage.image
+    def set(self,value):    
+        _image = Image.fromarray(value)
+        _image = _image.resize((self.lblImage.winfo_width(), self.lblImage.winfo_height()), Image.ANTIALIAS)
+        image = ImageTk.PhotoImage(_image)
+        self.lblImage.configure(image=image)
+        self.lblImage.image = image
+
 class ControlsPanel(Frame):
     def __init__(self, master,mgr,mediator):
         super(ControlsPanel,self).__init__(master, mgr,mediator)
-
-    def init(self):
-        self.controls=[]
- 
-    def set(self, vars):
-        self.initControls(vars)
-        self.layoutControls()
-
-    def initControls(self,vars):        
-        for name in vars:
-            var = vars[name]
-            control={'var':var
-                    ,'label': tk.Label(self, text =name, font = "50") 
-                    ,'control': self.createControl(self,var['type'])
-                    }
-            self.controls.append(control)
-            
-    def layoutControls(self):        
-        for i,p in enumerate(self.controls):            
-            p['label'].place(relx=0, y=(i+1)*40,relwidth=0.4, height=30)
-            p['control'].place(relx=0.5, y=(i+1)*40, relwidth=0.5, height=30)
-        # self.pack(fill=tk.BOTH, expand=tk.YES)                      
-
-    def createControl(self,master,type):
-        if type == 'number':
-            from_=None
-            to= None
-            if type['sign'] ==  True:
-                to = (type['precision'] * 8)/2
-                from_ = (to-1)*-1 
-            else:
-                to = type['precision'] * 8
-                from_ = 0                                   
-            return tk.Spinbox(master, from_= from_, to = to)
-        elif type.startswith('Enum.'):
-            enum=type.replace('Enum.','')
-            values= []
-            for k in self.mgr.Enum[enum].values.keys():
-                values.append(k) 
-            return ttk.Combobox(master,values=values)
-            # ver como seleccionar el valor de acuerdo al item seleccionado en el combo
-            # https://stackoverflow.com/questions/54283975/python-tkinter-combobox-and-dictionary
-        else:
-            return tk.Label(master,text=type)               
-
-#  https://realpython.com/python-descriptors/
-class ImageCtl(tk.Label):
-    def __init__(self, master=None, cnf={}, **kw):
-        super(ImageCtl,self).__init__(master, cnf,**kw)
-
-    @property
-    def value(self):
-        return self.image
-    @value.setter
-    def value(self,value):
-        _image = Image.fromarray(value)
-        _image = _image.resize((self.winfo_width(), self.winfo_height()), Image.ANTIALIAS)
-        image = ImageTk.PhotoImage(_image)
-        self.configure(image=image)
-        self.image = image
-
-class ImagesPanel(Frame):
-    def __init__(self, master,mgr,mediator):
-        super(ImagesPanel,self).__init__(master, mgr,mediator)
 
     def init(self):
         self._controls={}
 
     def set(self, vars):
         self.initControls(vars)
-        self.layoutControls()        
+        self.layoutControls() 
 
     def initControls(self,vars):        
         for name in vars:
-            self._controls[name] = ImageCtl(self,text =name,width=160,height=120)
+            control = self.createControl(self,vars[name])
+            control.bind('<<Changed>>', self.controlOnChanged)
+            self._controls[name]= control
+
+    def layoutControls(self):
+        i=0
+        for name in self._controls:
+            self._controls[name].place(relx=0,y=(i+1)*40,relwidth=0.9, height=100)
+            i=i+1                    
+
+    def createControl(self,key,var):
+        typeName = 'enum' if var['type'].startswith('Enum.') else var['type']
+        type = self.mgr.Type[typeName]
+        return self.mgr.Ui.new(type['ctl'],type=type,var=var,varName=key,mgr=self.mgr,master=self)    
+
+    def controlOnChanged(self, event):
+        value = event.widget.get()
+        print(event)
+
+    def contextOnChange(self,name,value):
+        if name in self._controls:
+            self._controls[name].set(value)
+
+class ImagesPanel(ControlsPanel):
+    def __init__(self, master,mgr,mediator):
+        super(ImagesPanel,self).__init__(master, mgr,mediator)
             
     def layoutControls(self):
         i=0
-        for key in self._controls:
-            self._controls[key].place(x=(160*i)+20, y=0, width=160, height=120)
+        for name in self._controls:
+            self._controls[name].place(x=(160*i)+20, y=0, width=160, height=120)
             i=i+1
-        # for i,p in enumerate(self.controls):
-        #     p['control'].place(x=(160*i)+20, y=0, width=160, height=120)
 
-    def changeValue(self,key,value):
-        if key in self._controls:
-            self._controls[key].value =value    
-
-class ProcessUi(FileEditor):
+class FileProcessUi(FileEditor):
     def __init__(self, master, mgr,mediator):
-        super(ProcessUi, self).__init__(master, mgr,mediator)
+        super(FileProcessUi, self).__init__(master, mgr,mediator)
 
     def init(self):
         self.graph = ProcessGraphPanel(self,self.mgr,self.mediator)
@@ -382,8 +409,8 @@ class ProcessUi(FileEditor):
 
     def set(self, fullpath):
         self.spec = self.getProcess(fullpath)
-        self.images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='image', self.spec['vars'].items()))
-        self.controls = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='image', self.spec['vars'].items()))
+        self.images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='cvImage', self.spec['vars'].items()))
+        self.controls = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='cvImage', self.spec['vars'].items()))
         self.graph.set(self.spec)
         self.imagesPanel.set(self.images)
         self.controlsPanel.set(self.controls)
@@ -436,11 +463,11 @@ class ProcessUi(FileEditor):
 
     def process_context_onChange(self,key,value,oldValue):
         if key in self.images:
-            self.imagesPanel.changeValue(key,value)     
+            self.imagesPanel.contextOnChange(key,value)     
 
-class EditorUi(FileEditor):
+class FileEditorUi(FileEditor):
     def __init__(self, master, mgr,mediator):
-        super(EditorUi, self).__init__(master, mgr,mediator)
+        super(FileEditorUi, self).__init__(master, mgr,mediator)
 
     def init(self):
         self.htmlFrame = HtmlFrame(self, horizontal_scrollbar="auto")

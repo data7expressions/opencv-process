@@ -18,21 +18,21 @@ class Manager():
         self.mgr=mgr
         self.type = Helper.rreplace(type(self).__name__, 'Manager', '') 
 
-    def __getattr__(self, key):
-        if key in self._list: return self._list[key]
+    def __getattr__(self, _key):
+        if _key in self._list: return self._list[_key]
         else: return None
-    def __getitem__(self,key):
-        return self._list[key]        
+    def __getitem__(self,_key):
+        return self._list[_key]        
     @property
     def list(self):
         return self._list
 
     def add(self,value):
-        key = Helper.rreplace(value.__name__,self.type , '')  
-        self._list[key]= value(self.mgr)
+        _key = Helper.rreplace(value.__name__,self.type , '')  
+        self._list[_key]= value(self.mgr)
 
-    def applyConfig(self,key,value):
-        self._list[key]= value    
+    def applyConfig(self,_key,value):
+        self._list[_key]= value    
 
     def key(self,value):
         if type(value).__name__ != 'type':
@@ -73,30 +73,30 @@ class MainManager(Manager):
     def addIconProvider(self,provider):
         self.iconProvider=provider
 
-    def getIcon(self,key):
+    def getIcon(self,_key):
         if self.iconProvider is None: return None
-        return self.iconProvider.getIcon(key) 
+        return self.iconProvider.getIcon(_key) 
 
-    def __getattr__(self, key):
-        if key=='Manager': return self      
-        if key in self._list: return self._list[key]
+    def __getattr__(self, _key):
+        if _key=='Manager': return self      
+        if _key in self._list: return self._list[_key]
         else: return None
-    def __getitem__(self,key):
-        if key=='Manager': return self
-        return self._list[key] 
+    def __getitem__(self,_key):
+        if _key=='Manager': return self
+        return self._list[_key] 
 
     def add(self,type):
-        key = Helper.rreplace(type.__name__,'Manager' , '')        
-        self._list[key]= type(self.mgr)
+        _key = Helper.rreplace(type.__name__,'Manager' , '')        
+        self._list[_key]= type(self.mgr)
 
     def applyConfig(self,configPath):
         with open(configPath, 'r') as stream:
             try:
                 data = yaml.safe_load(stream)
                 for type in data:
-                    keys=data[type]
-                    for key in keys:
-                        self[type].applyConfig(key,keys[key]) 
+                    _keys=data[type]
+                    for _key in _keys:
+                        self[type].applyConfig(_key,_keys[_key]) 
             except yaml.YAMLError as exc:
                 print(exc)
             except Exception as ex:
@@ -122,19 +122,19 @@ class MainManager(Manager):
             self.loadTypes('Manager',module)
         """Load others types on modules loaded"""
         for module in modules:
-            for key in self._list.keys():
-                self.loadTypes(key,module)
+            for _key in self._list.keys():
+                self.loadTypes(_key,module)
         """Load all configurations"""        
         list = glob.glob(path.join(pluginPath,'**/*.y*ml'),recursive=True)
         for item in list:
             self.applyConfig(path.join(pluginPath,item))                  
             
-    def loadTypes(self,key,module):
+    def loadTypes(self,_key,module):
         for element_name in dir(module):
-            if element_name.endswith(key) and element_name != key:
+            if element_name.endswith(_key) and element_name != _key:
                 element = getattr(module, element_name)
                 if inspect.isclass(element):
-                    self[key].add(element) 
+                    self[_key].add(element) 
 
 class ExpManager(Manager):
     def __init__(self,mgr):
@@ -174,22 +174,22 @@ class Enum():
     def values(self):
         return self.values
     
-    def value(self,key):
-        return self.values[key]
+    def value(self,_key):
+        return self.values[_key]
 
 class EnumManager(Manager):
     def __init__(self,mgr):
         super(EnumManager,self).__init__(mgr)
 
-    def applyConfig(self,key,value):
-        self._list[key]= Enum(value) 
+    def applyConfig(self,_key,value):
+        self._list[_key]= Enum(value) 
 
 class ConfigManager(Manager):
     def __init__(self,mgr):
         super(ConfigManager,self).__init__(mgr)
 
-    def applyConfig(self,key,value):
-        self._list[key]= value 
+    def applyConfig(self,_key,value):
+        self._list[_key]= value 
 
 class TaskManager(Manager):
     def __init__(self,mgr):
@@ -204,8 +204,8 @@ class HelperManager(Manager):
         super(HelperManager,self).__init__(mgr)  
 
     def add(self,value):
-        key = Helper.rreplace(value.__name__,self.type , '')  
-        self._list[key]= value       
+        _key = Helper.rreplace(value.__name__,self.type , '')  
+        self._list[_key]= value       
 
 class Process:
     def __init__(self,id,parent,spec,context,mgr):
@@ -233,8 +233,8 @@ class Process:
     def solveParams(self,params,context):
         return self.mgr.Exp.solveParams(params,context)            
 
-    def node(self,key):
-        return self._spec['nodes'][key]    
+    def node(self,_key):
+        return self._spec['nodes'][_key]    
 
     def start(self):
         self.init()
@@ -258,8 +258,8 @@ class Process:
         pass
         # self.execute(self._context.current)
 
-    def execute(self,key):
-        node=self.node(key)
+    def execute(self,_key):
+        node=self.node(_key)
         type=node['type'] 
         if type == 'Start':
             self.nextNode(node)
@@ -269,7 +269,7 @@ class Process:
             self.executeTask(node)
             self.nextNode(node)
 
-        print('executed:'+key)    
+        print('executed:'+_key)    
         
     def executeEnd(self,node):
         pass
@@ -308,8 +308,8 @@ class ProcessManager(Manager):
         super(ProcessManager,self).__init__(mgr)
 
     
-    def create(self,key,context,parent=None):
-        spec=self._list[key]
+    def create(self,_key,context,parent=None):
+        spec=self._list[_key]
         id=str(uuid.uuid4())
         process = Process(id,parent,spec,context,self.mgr)
         self._instances[id]= {"process":process }
@@ -332,14 +332,14 @@ class ProcessManager(Manager):
     def getInstance(self,id):
         return self._instances[id]
 
-    def applyConfig(self,key,value):
-        self.completeSpec(key,value)
-        self._list[key]= value
+    def applyConfig(self,_key,value):
+        self.completeSpec(_key,value)
+        self._list[_key]= value
 
-    def completeSpec(self,key,spec):
-        spec['name']= key        
-        for key in spec['nodes']:
-            self.completeSpecNode(spec['nodes'][key])
+    def completeSpec(self,_key,spec):
+        spec['name']= _key        
+        for _key in spec['nodes']:
+            self.completeSpecNode(spec['nodes'][_key])
         self.completeSpecVars(spec)
     def completeSpecVars(self,spec):
         vars={}
@@ -347,8 +347,8 @@ class ProcessManager(Manager):
             for p in spec['input']:
                 vars[p['name']]={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}  
         if 'nodes' in spec:
-            for key in spec['nodes']:
-                node=spec['nodes'][key]
+            for _key in spec['nodes']:
+                node=spec['nodes'][_key]
                 if 'input' in node:
                     for p in node['input']:
                         var =self.mgr.Exp.var(p['exp'])
@@ -387,29 +387,27 @@ class ProcessManager(Manager):
     def completeSpecTransition(self,node):        
         if 'transition' not in node:
             node['transition']=[] 
-
-
     
 class UiManager(Manager):
     def __init__(self,mgr):
         super(UiManager,self).__init__(mgr)
 
     def add(self,value):
-        key = Helper.rreplace(value.__name__,self.type , '')  
-        self._list[key]= value 
+        _key = Helper.rreplace(value.__name__,self.type , '')  
+        self._list[_key]= value 
 
-    def singleton(self,key,args={}):
-        value=self._list[key]
+    def singleton(self,_key,**args):
+        value=self._list[_key]
         if type(value).__name__ != 'type':
             return value
 
         args['mgr']=self.mgr
         instance=value(**args)
-        self._list[key]= instance
+        self._list[_key]= instance
         return instance
 
-    def new(self,key,args={}):
-        value=self._list[key]
+    def new(self,_key,**args):
+        value=self._list[_key]
         _class=None
         if type(value).__name__ == 'type':
             _class=value
