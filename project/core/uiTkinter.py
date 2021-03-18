@@ -77,9 +77,9 @@ class IconProvider():
         if key not in self.icons: key = '_blank'
         return self.icons[key.replace('.','')]   
 
-class Frame(ttk.Frame):
-    def __init__(self, master, mgr,mediator):
-        super(Frame, self).__init__(master)
+class Frame(tk.Frame):
+    def __init__(self, master, mgr,mediator,**kw):
+        super(Frame, self).__init__(master,**kw)
         self.mgr = mgr
         self.mediator=mediator
         self.mediator.onMessage+=self.onMessage

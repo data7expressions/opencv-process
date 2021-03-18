@@ -167,6 +167,17 @@ class TypeManager(Manager):
     def __init__(self,mgr):
         super(TypeManager,self).__init__(mgr)
 
+    def range(self,type):
+        from_=None
+        to= None
+        if type['sign'] ==  True:
+            to = (type['precision'] * 8)/2
+            from_ = (to-1)*-1 
+        else:
+            to = type['precision'] * 8
+            from_ = 0 
+        return from_,to          
+
 class Enum():
     def __init__(self,values):
         self.values =values
@@ -208,16 +219,20 @@ class HelperManager(Manager):
         self._list[_key]= value       
 
 class Process:
-    def __init__(self,id,parent,spec,context,mgr):
+    def __init__(self,parent,spec,context,mgr):
         self._id=id 
         self._parent=parent
         self._spec=spec
         self._context=Context(context)      
         self.mgr=mgr
+        self.init()
 
     @property
     def id(self):
         return self._id
+    @id.setter
+    def id(self,value):
+        self._id=value      
     @property
     def parent(self):
         return self._parent
@@ -228,16 +243,20 @@ class Process:
     def context(self):
         return self._context
 
-              
-
     def solveParams(self,params,context):
         return self.mgr.Exp.solveParams(params,context)            
 
     def node(self,_key):
         return self._spec['nodes'][_key]    
 
+    def init(self):
+        if 'init' in self._spec:
+            self.solveParams(self._spec['init'],self._context)
+            for p in self._spec['init']:
+                print(p)
+                self._context[p['name']]=p['value']
+
     def start(self):
-        self.init()
         starts = dict(filter(lambda p: p[1]['type'] == 'Start', self._spec['nodes'].items()))
         for name in starts:
             start = starts[name]
@@ -247,12 +266,7 @@ class Process:
             else:
                 self.execute(name)        
 
-    def init(self):
-        if 'init' in self._spec:
-            self.solveParams(self._spec['init'],self._context)
-            for p in self._spec['init']:
-                print(p)
-                self._context[p['name']]=p['value']
+   
 
     def restart(self):
         pass
@@ -306,22 +320,23 @@ class ProcessManager(Manager):
     def __init__(self,mgr):
         self._instances= {}
         super(ProcessManager,self).__init__(mgr)
-
     
-    def create(self,_key,context,parent=None):
+    def create(self,_key:str,context:Context,parent=None):
         spec=self._list[_key]
-        id=str(uuid.uuid4())
-        process = Process(id,parent,spec,context,self.mgr)
-        self._instances[id]= {"process":process }
-        return process
+        return Process(parent,spec,context,self.mgr)
 
-    def start(self,id):        
+    def apply(self,_key:str,spec:dict,context:Context,parent=None):        
+        self.completeSpec(_key,spec)
+        self._list[_key]= spec        
+        return Process(parent,spec,context,self.mgr)    
+
+    def start(self,process:Process):        
         try:
-            instance = self._instances[id]
-            thread = threading.Thread(target=self._process_start, args=(instance["process"],))
-            instance["thread"]=thread
+            process.id = str(uuid.uuid4())             
+            thread = threading.Thread(target=self._process_start, args=(process,))
+            self._instances[process.id]= {"process":process,"thread":thread }            
             thread.start()
-            return instance
+            return process.id
         except Exception as ex:
             print(ex)
             raise        
@@ -336,12 +351,12 @@ class ProcessManager(Manager):
         self.completeSpec(_key,value)
         self._list[_key]= value
 
-    def completeSpec(self,_key,spec):
+    def completeSpec(self,_key,spec:dict):
         spec['name']= _key        
         for _key in spec['nodes']:
             self.completeSpecNode(spec['nodes'][_key])
         self.completeSpecVars(spec)
-    def completeSpecVars(self,spec):
+    def completeSpecVars(self,spec:dict):
         vars={}
         if 'input' in spec:
             for p in spec['input']:
@@ -356,7 +371,11 @@ class ProcessManager(Manager):
                             vars[var]={'type':p['type'],'bind':(True if var in spec['bind'] else False )}  
                 if 'output' in node:
                     for p in node['output']:
-                        vars[p['assig']]={'type':p['type'],'bind':(True if p['assig'] in spec['bind'] else False )} 
+                        vars[p['assig']]={'type':p['type'],'bind':(True if p['assig'] in spec['bind'] else False )}
+
+        for name in vars:
+            vars[name]['isInput']= len(list(filter (lambda p : p['name'] == name, spec['input']))) > 0
+
         spec['vars']=vars
     def completeSpecNode(self,node):
         type=node['type'] 

@@ -17,8 +17,8 @@ from ..core.uiTkinter import *
 
 
 class MainUi(Frame):
-    def __init__(self, master, mgr):
-        super(MainUi, self).__init__(master,mgr,UiMediatior())
+    def __init__(self, master, mgr,**kw):
+        super(MainUi, self).__init__(master,mgr,UiMediatior(),**kw)
 
     def init(self):
         self.toolbar = ToolbarPanel(self, self.mgr,self.mediator)               
@@ -59,8 +59,8 @@ class MainUi(Frame):
         print(row_id)
 
 class TabsFilePanel(Frame):
-    def __init__(self, master, mgr,mediator):
-        super(TabsFilePanel, self).__init__(master,mgr,mediator)        
+    def __init__(self, master, mgr,mediator,**kw):
+        super(TabsFilePanel, self).__init__(master,mgr,mediator,**kw)        
 
     def init(self):
         self.frames = {}
@@ -105,8 +105,8 @@ class TabsFilePanel(Frame):
         return frame, tabIndex
 
 class ContainerUi(Frame):
-    def __init__(self, master, mgr,mediator):        
-        super(ContainerUi, self).__init__(master, mgr,mediator) 
+    def __init__(self, master, mgr,mediator,**kw):        
+        super(ContainerUi, self).__init__(master, mgr,mediator,**kw) 
 
     def init(self):
         self.currentEditor = None
@@ -150,8 +150,8 @@ class ContainerUi(Frame):
         return self.currentEditor
 
 class FileEditor(Frame):
-    def __init__(self, master, mgr,mediator):        
-        super(FileEditor, self).__init__(master, mgr,mediator)
+    def __init__(self, master, mgr,mediator,**kw):        
+        super(FileEditor, self).__init__(master, mgr,mediator,**kw)
         self._current= False
 
     @property
@@ -168,8 +168,8 @@ class FileEditor(Frame):
         self._current=value      
 
 class FileImageUi(FileEditor):
-    def __init__(self, master, mgr,mediator):
-        super(FileImageUi, self).__init__(master, mgr,mediator)
+    def __init__(self, master, mgr,mediator,**kw):
+        super(FileImageUi, self).__init__(master, mgr,mediator,**kw)
 
     def init(self):
         self.panel = tk.Label(self)
@@ -186,9 +186,9 @@ class FileImageUi(FileEditor):
         self.panel.place(x=0, y=0)
         self.panel.pack(expand=1, fill="both")
 
-class ProcessGraphPanel(Frame):
-    def __init__(self, master,mgr,mediator):
-        super(ProcessGraphPanel,self).__init__(master, mgr,mediator)
+class ProcessDiagramPanel(Frame):
+    def __init__(self, master,mgr,mediator,**kw):
+        super(ProcessDiagramPanel,self).__init__(master, mgr,mediator,**kw)
     """
     References: 
         https://graphviz.readthedocs.io/en/stable/examples.html
@@ -257,8 +257,11 @@ class ProcessGraphPanel(Frame):
         return filename+'.png'
 
     def showGraph(self, imgPath):
+        self.update_idletasks()
+        h = self.winfo_height()
+        w = self.winfo_width()
         load = Image.open(imgPath)
-        load = load.resize((640, 480), Image.ANTIALIAS)
+        load = load.resize((w, h), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(load)
         self.panel.configure(image=img)
         self.panel.image = img
@@ -273,7 +276,7 @@ class Control(ttk.Frame):
         self._var = var
         self._varName = varName
 
-    def onChanged(self, event):
+    def onChanged(self, event=None):
         self.event_generate('<<Changed>>')
 
     @property
@@ -286,20 +289,86 @@ class Control(ttk.Frame):
     def varName(self):
         return self._varName         
  
+class NumberUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(NumberUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.var = tk.IntVar()
+
+        from_,to=mgr.Type.range(type)   
+        
+        self.lbl = tk.Label(self,text=varName)        
+        self.sbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.var,command=self.onChanged)      
+        
+        self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
+        self.sbox.place(relx=0.5, y=0, relwidth=0.5, height=25)
+        self.pack()
+
+    def get(self):                              
+        return self.var.get()
+
+    def set(self,value):
+        self.var.set(value)
+
+class StringUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(StringUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.bindVar = tk.StringVar()
+        self.bindVar.trace("w", lambda name, index, mode, sv=self.bindVar: self.onChanged())         
+        
+        self.lbl = tk.Label(self,text=varName)        
+        self.txt = tk.Entry(self,textvariable=self.bindVar)      
+        
+        self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
+        self.txt.place(relx=0.5, y=0, relwidth=0.5, height=25)
+        self.pack()
+
+    def get(self):                              
+        return self.bindVar.get()
+
+    def set(self,value):
+        self.bindVar.set(value)
+
+class FilePathUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(FilePathUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.bindVar = tk.StringVar()
+        self.bindVar.trace("w", lambda name, index, mode, sv=self.bindVar: self.onChanged())
+        
+        self.lbl = tk.Label(self,text=varName)        
+        self.txt = ttk.Entry(self,textvariable=self.bindVar)
+        self.btn = ttk.Button(self,text='...',command=self.openFilename )       
+        
+        self.lbl.place(relx=0, y=0,relwidth=0.3, height=25)
+        self.txt.place(relx=0.3, y=0, relwidth=0.5, height=25)
+        self.btn.place(relx=0.8, y=0, relwidth=0.2, height=25)
+        self.pack()
+
+    def openFilename(self):
+        current =self.bindVar.get()
+        initialdir=path.dirname(path.abspath(current))
+        result = fd.askopenfilename(initialdir=initialdir)
+        if not result:return
+        self.set(result)
+
+    def get(self):                              
+        return self.bindVar.get()
+
+    def set(self,value):
+        self.bindVar.set(value)
+
 class EnumUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
         super(EnumUi, self).__init__(type,var,varName,mgr,master,**kw)
-        
-        self.lbl = tk.Label(self,height=1)
-        self.lbl.pack(fill='x')
-        self.lbl.config(text=varName)        
-
         enumName=var['type'].replace('Enum.','')
         self.enum= self.mgr.Enum[enumName]
+        
+        self.lbl = tk.Label(self,text=varName)        
         self.cmb = ttk.Combobox(self,values=sorted(self.enum.values.keys()))       
-        self.cmb.pack(fill='both', expand=1)
         self.cmb.bind('<<ComboboxSelected>>',self.onChanged)
-        self.pack()    
+
+        self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
+        self.cmb.place(relx=0.5, y=0, relwidth=0.5, height=25)
+        self.pack()        
 
     def get(self):                              
         return self.enum.values[self.get_key()]
@@ -315,6 +384,60 @@ class EnumUi(Control):
                 break
         if key != None:
            self.cmb.set(key)    
+
+class PointUi(Control):
+    def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
+        super(PointUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.varX = tk.IntVar()
+        self.varY = tk.IntVar()
+
+        xType = self.mgr.Type['int']
+        from_,to=mgr.Type.range(xType) 
+        
+        self.xlbl = tk.Label(self,text='x')        
+        self.xSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varX,command=self.onChanged)
+        self.ylbl = tk.Label(self,text='x')        
+        self.ySbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varY,command=self.onChanged)       
+        
+        self.xlbl.place(relx=0, y=0,relwidth=0.1, height=25)
+        self.xSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.ylbl.place(relx=0, y=0,relwidth=0.1, height=25)
+        self.ySbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.pack()
+
+    def get(self)->Point:                              
+        return Point(self.varX.get(),self.varY.get())
+
+    def set(self,value:Point):
+        self.varX.set(value.x)
+        self.varY.set(value.y)
+
+class SizeUi(Control):
+    def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
+        super(SizeUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.varW = tk.IntVar()
+        self.varH = tk.IntVar()
+        
+        wType = self.mgr.Type['int']
+        from_,to=mgr.Type.range(wType) 
+        
+        self.wlbl = tk.Label(self,text='w')        
+        self.wSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varW,command=self.onChanged)
+        self.hlbl = tk.Label(self,text='h')        
+        self.hSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varH,command=self.onChanged)       
+        
+        self.wlbl.place(relx=0, y=0,relwidth=0.1, height=25)
+        self.wSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.hlbl.place(relx=0, y=0,relwidth=0.1, height=25)
+        self.hSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.pack()
+
+    def get(self)->Size:                              
+        return Size(self.varW.get(),self.varH.get())
+
+    def set(self,value:Size):
+        self.varW.set(value.w)
+        self.varH.set(value.h)
 
 #  https://realpython.com/python-descriptors/
 class CvImageUi(Control):
@@ -339,11 +462,27 @@ class CvImageUi(Control):
         self.lblImage.image = image
 
 class ControlsPanel(Frame):
-    def __init__(self, master,mgr,mediator):
-        super(ControlsPanel,self).__init__(master, mgr,mediator)
+    def __init__(self, master,mgr,mediator,title=None,**kw):
+        self.title = title 
+        super(ControlsPanel,self).__init__(master, mgr,mediator,**kw)
+        self._onChange=Event()
+               
+
+    @property
+    def onChange(self):
+        return self._onChange
+    @onChange.setter
+    def onChange(self,value):
+        self._onChange=value 
 
     def init(self):
         self._controls={}
+        if self.title:  
+            self.lblTitle = tk.Label(self,text=self.title,anchor='w', bg='#000', fg='#fff',padx=1) 
+
+    def layout(self):
+        if self.title:
+            self.lblTitle.place(relx=0,y=0,relwidth=1, height=20)
 
     def set(self, vars):
         self.initControls(vars)
@@ -351,74 +490,103 @@ class ControlsPanel(Frame):
 
     def initControls(self,vars):        
         for name in vars:
-            control = self.createControl(self,vars[name])
+            control = self.createControl(name,vars[name])
             control.bind('<<Changed>>', self.controlOnChanged)
             self._controls[name]= control
 
     def layoutControls(self):
         i=0
+        titleHeight =  21 if self.title else 1 
         for name in self._controls:
-            self._controls[name].place(relx=0,y=(i+1)*40,relwidth=0.9, height=100)
+            self._controls[name].place(relx=0,y=(i*30)+titleHeight,relwidth=1, height=30)
             i=i+1                    
 
     def createControl(self,key,var):
         typeName = 'enum' if var['type'].startswith('Enum.') else var['type']
         type = self.mgr.Type[typeName]
-        return self.mgr.Ui.new(type['ctl'],type=type,var=var,varName=key,mgr=self.mgr,master=self)    
+        control= self.mgr.Ui.new(type['ctl'],type=type,var=var,varName=key,mgr=self.mgr,master=self)
+        if 'initValue' in var:
+            control.set(var['initValue'])
+        return control        
 
     def controlOnChanged(self, event):
         value = event.widget.get()
-        print(event)
+        key = event.widget.varName
+        self._onChange(key,value) 
 
     def contextOnChange(self,name,value):
         if name in self._controls:
             self._controls[name].set(value)
 
-class ImagesPanel(ControlsPanel):
-    def __init__(self, master,mgr,mediator):
-        super(ImagesPanel,self).__init__(master, mgr,mediator)
+class GrapthPanel(ControlsPanel):
+    def __init__(self, master,mgr,mediator,title=None,**kw):
+        super(GrapthPanel,self).__init__(master, mgr,mediator,title,**kw)
             
-    def layoutControls(self):
+    def layoutControls(self):  
+        titleHeight =  21 if self.title else 1      
+        self.update_idletasks()
+        h = self.winfo_height() - titleHeight
+        w =  int(h * 1.33)
         i=0
         for name in self._controls:
-            self._controls[name].place(x=(160*i)+20, y=0, width=160, height=120)
+            self._controls[name].place(x=((w+1)*i)+2, y=titleHeight, width=w, height=h)
             i=i+1
 
 class FileProcessUi(FileEditor):
-    def __init__(self, master, mgr,mediator):
-        super(FileProcessUi, self).__init__(master, mgr,mediator)
+    def __init__(self, master, mgr,mediator,**kw):
+        super(FileProcessUi, self).__init__(master, mgr,mediator,**kw)
 
     def init(self):
-        self.graph = ProcessGraphPanel(self,self.mgr,self.mediator)
-        self.controlsPanel = ControlsPanel(self,self.mgr,self.mediator)
-        self.imagesPanel = ImagesPanel(self,self.mgr,self.mediator)
-        self.spec = None
+        self.diagram = ProcessDiagramPanel(self,self.mgr,self.mediator)
+        self.inputVarsPanel = ControlsPanel(self,self.mgr,self.mediator,title='input')
+        self.processVarsPanel = ControlsPanel(self,self.mgr,self.mediator,title='bind vars')
+        self.grapthVarsPanel = GrapthPanel(self,self.mgr,self.mediator,title='bind grapth')
         self.processInstance = None
 
     def layout(self):
-        tk.Grid.rowconfigure(self, 0, weight=3)
-        tk.Grid.columnconfigure(self, 0, weight=3)        
-        self.graph.grid(row=0, column=0, sticky="nsew")
-        tk.Grid.rowconfigure(self, 0, weight=3)
-        tk.Grid.columnconfigure(self, 1, weight=1)
-        self.controlsPanel.grid(row=0, column=1, sticky="nsew")
-        tk.Grid.rowconfigure(self, 1, weight=1)
-        tk.Grid.columnconfigure(self, 0, weight=1)
-        self.imagesPanel.grid(row=1, column=0, sticky="nsew")
+        self.diagram.place(relx=0, rely=0,relwidth=0.75, relheight=0.75)
+        self.diagram.configure(background='red')
+        self.inputVarsPanel.place(relx=0.75, rely=0,relwidth=0.25, relheight=0.25)
+        self.inputVarsPanel.configure(background='yellow')
+        self.processVarsPanel.place(relx=0.75, rely=0.25,relwidth=0.25, relheight=0.75)
+        self.processVarsPanel.configure(background='blue')
+        self.grapthVarsPanel.place(relx=0, rely=0.75,relwidth=0.75, relheight=0.25)
+        self.grapthVarsPanel.configure(background='pink')
         self.pack(fill=tk.BOTH, expand=tk.YES)
 
-    def set(self, fullpath):
-        self.spec = self.getProcess(fullpath)
-        self.images = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']=='cvImage', self.spec['vars'].items()))
-        self.controls = dict(filter(lambda p: p[1]['bind'] == True and p[1]['type']!='cvImage', self.spec['vars'].items()))
-        self.graph.set(self.spec)
-        self.imagesPanel.set(self.images)
-        self.controlsPanel.set(self.controls)
+    def set(self, fullpath):       
+
+        context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
+                  ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
+                  }
+        spec = self.getProcess(fullpath)          
+        self.processInstance = self.mgr.Process.apply(spec['name'],spec,context)
+
+        vars = self.processInstance.spec['vars']
+        context = self.processInstance.context
+        for p in vars:
+            if p in context:
+                vars[p]['initValue'] = context[p]
+
+        self.inputVars = dict(filter(lambda p: p[1]['isInput']== True, vars.items()))
+        self.processVars = dict(filter(lambda p: p[1]['bind'] == True and p[1]['isInput']== False and p[1]['type']!='cvImage',vars.items()))
+        self.grapthVars = dict(filter(lambda p: p[1]['bind'] == True and p[1]['isInput']== False and p[1]['type']=='cvImage', vars.items()))
+        self.diagram.set(self.processInstance.spec)
+        
+        self.inputVarsPanel.set(self.inputVars)
+        self.processVarsPanel.set(self.processVars)
+        self.grapthVarsPanel.set(self.grapthVars)        
+
+        context.onChange += self.process_context_onChange
+        self.inputVarsPanel.onChange+= self.control_onChange
+        self.processVarsPanel.onChange+= self.control_onChange
+        self.grapthVarsPanel.onChange+= self.control_onChange
+        
 
     def onMessage(self,sender,verb,resource,args): 
         if self.current == False:
             return
-        if resource == 'process' and self.spec != None:
+        if resource == 'process' and self.processInstance.spec != None:
             if verb == 'start':
                 self.process_start()
             elif verb == 'stop':
@@ -445,29 +613,26 @@ class FileProcessUi(FileEditor):
         return spec
 
     def process_start(self):
-        context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
-                  ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
-                  }
-        self.processInstance = self.mgr.Process.create(self.spec['name'],context)
-        self.processInstance.context.onChange += self.process_context_onChange 
-        self.mgr.Process.start(self.processInstance.id)        
-
-     
-
+        self.mgr.Process.start(self.processInstance)
     def process_stop(self):
-        if self.processInstance != None:
+        if self.processInstance != None and self.processInstance.id != None:
            self.mgr.Process.stop(self.processInstance.id) 
     def process_pause(self):
-        if self.processInstance != None:
-           self.mgr.Process.pause(self.processInstance.id) 
+        if self.processInstance != None and self.processInstance.id != None:
+           self.mgr.Process.pause(self.processInstance.id)
+
+    def control_onChange(self,key,value):
+        self.processInstance.context[key]=value
 
     def process_context_onChange(self,key,value,oldValue):
-        if key in self.images:
-            self.imagesPanel.contextOnChange(key,value)     
+        if key in self.grapthVars:
+            self.grapthVarsPanel.contextOnChange(key,value)
+        elif key in self.processVars:
+            self.processVarsPanel.contextOnChange(key,value)          
 
 class FileEditorUi(FileEditor):
-    def __init__(self, master, mgr,mediator):
-        super(FileEditorUi, self).__init__(master, mgr,mediator)
+    def __init__(self, master, mgr,mediator,**kw):
+        super(FileEditorUi, self).__init__(master, mgr,mediator,**kw)
 
     def init(self):
         self.htmlFrame = HtmlFrame(self, horizontal_scrollbar="auto")

@@ -5,70 +5,55 @@ Type:
   sbyte:
     precision: 8
     sign: True
-    ctl: number    
+    ctl: Number    
   byte:
     precision: 8
     sign: False
-    ctl: number 
+    ctl: Number 
   short:
     precision: 16
     sign: True
-    ctl: number 
+    ctl: Number 
   ushort:
     precision: 16
     sign: False
-    ctl: number 
+    ctl: Number 
   int:
     precision: 32
     sign: True
-    ctl: number 
+    ctl: Number 
   uint:
     precision: 32
     sign: False
-    ctl: number 
+    ctl: Number 
   long:
     precision: 64
     sign: True
-    ctl: number 
+    ctl: Number 
   ulong:
     precision: 64
     sign: False
-    ctl: number 
+    ctl: Number 
   decimal:
     precision: 128
     sign: False
     ctl: decimal 
   string:
-    ctl: textbox
+    ctl: String
   enum:
-    ctl: Enum 
-  point:
-    struct:
-      x: int
-      y: int
-    ctl: point   
-  size:
-    struct:
-      w: int
-      h: int
-    ctl: size    
-  rect:
-    struct:
-      x: int
-      y: int
-      w: int
-      h: int
-    ctl: rect   
+    ctl: Enum
   scalar:
     struct:
       val: long[4]
-    ctl: scalar  
-  rgb:
-    struct:
-      r: byte
-      g: byte  
-      b: byte
-    ctl: rgb        
+    ctl: scalar    
+  Point:
+    ctl: Point   
+  Size:
+    ctl: Size    
+  Rectangle:
+    ctl: Rectangle
+  Rgb:
+    ctl: Rgb        
   image:
     ctl: ImageCtl 
   filename:
@@ -76,7 +61,7 @@ Type:
     ctl: filename
   filePath:
     base: string
-    ctl: filePath
+    ctl: FilePath
     re: (.+?)(\.[^.]*$|$)
   folderPath:
     base: string
