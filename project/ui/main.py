@@ -15,7 +15,6 @@ from ..core.base import *
 from ..core.manager import *
 from ..core.uiTkinter import *
 
-
 class MainUi(Frame):
     def __init__(self, master, mgr,**kw):
         super(MainUi, self).__init__(master,mgr,UiMediatior(),**kw)
