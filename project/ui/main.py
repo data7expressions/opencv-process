@@ -493,17 +493,17 @@ class PointUi(Control):
         self.ySbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varY,command=self.onChanged)       
         
         self.xlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.xSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
-        self.ylbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.ySbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.xSbox.place(relx=0.1, y=0, relwidth=0.3, height=25)
+        self.ylbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
+        self.ySbox.place(relx=0.6, y=0, relwidth=0.3, height=25)
         self.pack()
 
-    def get(self)->Point:                              
-        return Point(self.varX.get(),self.varY.get())
+    def get(self)->dict:                              
+        return {'x':self.varX.get(),'y': self.varY.get()}
 
-    def set(self,value:Point):
-        self.varX.set(value.x)
-        self.varY.set(value.y)
+    def set(self,value:dict):
+        self.varX.set(value['x'])
+        self.varY.set(value['y'])
 
 class SizeUi(Control):
     def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
@@ -520,17 +520,56 @@ class SizeUi(Control):
         self.hSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varH,command=self.onChanged)       
         
         self.wlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.wSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
-        self.hlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.hSbox.place(relx=0.5, y=0, relwidth=0.3, height=25)
+        self.wSbox.place(relx=0.1, y=0, relwidth=0.3, height=25)
+        self.hlbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
+        self.hSbox.place(relx=0.6, y=0, relwidth=0.3, height=25)
         self.pack()
 
-    def get(self)->Size:                              
-        return Size(self.varW.get(),self.varH.get())
+    def get(self)->dict:                              
+        return {'width': self.varW.get(), 'height':self.varH.get()}
 
-    def set(self,value:Size):
-        self.varW.set(value.w)
-        self.varH.set(value.h)
+    def set(self,value:dict):
+        self.varW.set(value['width'])
+        self.varH.set(value['height'])
+
+class RectangleUi(Control):
+    def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
+        super(RectangleUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.varX = tk.IntVar()
+        self.varY = tk.IntVar()
+        self.varW = tk.IntVar()
+        self.varH = tk.IntVar()
+
+        xType = self.mgr.Type['int']
+        from_,to=mgr.Type.range(xType) 
+        
+        self.xlbl = tk.Label(self,text='x')        
+        self.xSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varX,command=self.onChanged)
+        self.ylbl = tk.Label(self,text='x')        
+        self.ySbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varY,command=self.onChanged)
+        self.wlbl = tk.Label(self,text='w')        
+        self.wSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varW,command=self.onChanged)
+        self.hlbl = tk.Label(self,text='h')        
+        self.hSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varH,command=self.onChanged)          
+        
+        self.xlbl.place(relx=0, y=0,relwidth=0.1, height=25)
+        self.xSbox.place(relx=0.1, y=0, relwidth=0.15, height=25)
+        self.ylbl.place(relx=0.25, y=0,relwidth=0.1, height=25)
+        self.ySbox.place(relx=0.35, y=0, relwidth=0.15, height=25)
+        self.wlbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
+        self.wSbox.place(relx=0.6, y=0, relwidth=0.15, height=25)
+        self.hlbl.place(relx=0.75, y=0,relwidth=0.1, height=25)
+        self.hSbox.place(relx=0.85, y=0, relwidth=0.15, height=25)
+        self.pack()
+
+    def get(self)->dict:                              
+        return {'x':self.varX.get(),'y': self.varY.get(),'width': self.varW.get(), 'height':self.varH.get()}
+
+    def set(self,value:dict):
+        self.varX.set(value['x'])
+        self.varY.set(value['y'])
+        self.varW.set(value['width'])
+        self.varH.set(value['height'])
 
 #  https://realpython.com/python-descriptors/
 class CvImageUi(Control):

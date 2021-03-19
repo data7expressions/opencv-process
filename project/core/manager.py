@@ -148,6 +148,8 @@ class ExpManager(Manager):
             elif exp.startswith('enum.'):
                 arr=exp.replace('enum.','').split('.')
                 return self.mgr.Enum[arr[0]].value(arr[1])
+        elif type(exp) is dict:
+            return exp        
 
         if _type == 'filepath' or _type == 'folderpath' :
             if not path.isabs(exp): 

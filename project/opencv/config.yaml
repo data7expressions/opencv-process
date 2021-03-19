@@ -3,7 +3,11 @@ Enum:
     BGR2RGB: 4
     BGR2GRAY: 6
     RGB2GRAY: 7
-    BGR2HSV: 40 
+    BGR2HSV: 40
+  RotateAngle:
+    '90' : 90
+    '180' : 180
+    '270': 270   
 
 Type:
   cvImage:
@@ -49,6 +53,36 @@ Config:
       output:
       - name: default 
         type: cvImage
+    Rotate:
+      description: "Rotates using multiple 90"
+      input:
+      - name: image 
+        type: cvImage
+      - name: angle 
+        type: Enum.RotateAngle     
+      output:
+      - name: default 
+        type: cvImage
+    Resize:
+      description: Resize image
+      input:
+      - name: image 
+        type: cvImage
+      - name: percent 
+        type: decimal 
+      output:
+      - name: default 
+        type: cvImage 
+    Crop:
+      description: Crop image
+      input:
+      - name: image 
+        type: cvImage
+      - name: rectangle 
+        type: Rectangle
+      output:
+      - name: default 
+        type: cvImage            
 
 
     

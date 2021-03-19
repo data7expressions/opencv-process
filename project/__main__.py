@@ -37,7 +37,12 @@ def ui(mgr):
     mgr.Ui.add(NumberUi)
     mgr.Ui.add(DecimalUi)    
     mgr.Ui.add(StringUi) 
-    mgr.Ui.add(FilepathUi)  
+    mgr.Ui.add(FilepathUi) 
+    mgr.Ui.add(PointUi)
+    mgr.Ui.add(SizeUi) 
+    mgr.Ui.add(RectangleUi)
+
+    
 
     
 

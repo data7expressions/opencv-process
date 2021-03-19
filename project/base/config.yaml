@@ -48,12 +48,27 @@ Type:
       val: long[4]
     ctl: scalar    
   Point:
+    struct:
+      x: int
+      y: int
     ctl: Point   
   Size:
+    struct:
+      width: int
+      height: int
     ctl: Size    
   Rectangle:
+    struct:
+      x: int
+      y: int
+      width: int
+      height: int
     ctl: Rectangle
   Rgb:
+    struct:
+      r: byte
+      g: byte
+      b: byte
     ctl: Rgb        
   image:
     ctl: ImageCtl 
