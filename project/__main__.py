@@ -13,7 +13,7 @@ rootpath = getcwd()
 
 def init():   
    plugins= []
-   plugins.append(path.join(rootpath,'project/main'))
+   plugins.append(path.join(rootpath,'project/base'))
    plugins.append(path.join(rootpath,'project/opencv'))
 #    plugins.append(path.join(rootpath,'project/ui'))
    plugins.append(path.join(rootpath,'data/workspace'))
@@ -34,7 +34,12 @@ def ui(mgr):
 
     mgr.Ui.add(CvImageUi)
     mgr.Ui.add(EnumUi)
+    mgr.Ui.add(NumberUi)
+    mgr.Ui.add(DecimalUi)    
+    mgr.Ui.add(StringUi) 
     mgr.Ui.add(FilepathUi)  
+
+    
 
     mgr.applyConfig(path.join(rootpath,'project/ui/config.yaml'))
     

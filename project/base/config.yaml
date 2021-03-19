@@ -1,4 +1,5 @@
 # http://elvex.ugr.es/decsai/csharp/language/data.xml
+# https://docs.microsoft.com/es-es/dotnet/csharp/language-reference/builtin-types/integral-numeric-types
 # https://www.monografias.com/trabajos107/tipos-datos-opencv/tipos-datos-opencv.shtml
 
 Type:
@@ -37,7 +38,7 @@ Type:
   decimal:
     precision: 128
     sign: False
-    ctl: decimal 
+    ctl: Decimal 
   string:
     ctl: String
   enum:
@@ -75,3 +76,12 @@ Type:
     base: string
     ctl: textbox
     re: (?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\  
+
+Config:
+  Task:    
+    Sleep:
+      description:
+      input:
+      - name: secs 
+        type: decimal
+

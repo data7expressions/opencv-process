@@ -350,22 +350,57 @@ class Control(ttk.Frame):
 class NumberUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
         super(NumberUi, self).__init__(type,var,varName,mgr,master,**kw)
-        self.var = tk.IntVar()
+        self.bindVar = tk.IntVar()
 
         from_,to=mgr.Type.range(type)   
         
         self.lbl = tk.Label(self,text=varName)        
-        self.sbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.var,command=self.onChanged)      
+        self.sbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.bindVar,command=self.onChanged)      
         
         self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
         self.sbox.place(relx=0.5, y=0, relwidth=0.5, height=25)
         self.pack()
 
     def get(self):                              
-        return self.var.get()
+        return self.bindVar.get()
 
     def set(self,value):
-        self.var.set(value)
+        self.bindVar.set(value)
+
+class DecimalUi(Control):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(DecimalUi, self).__init__(type,var,varName,mgr,master,**kw)        
+        self.bindVar = tk.StringVar()
+        vcmd = (self.register(self.on_entry_validate), '%P')
+                
+        self.lbl = tk.Label(self,text=varName)  
+        self.entry = tk.Entry(self, validate="key",textvariable=self.bindVar, validatecommand=vcmd )      
+        # self.sbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.bindVar,command=self.onChanged)      
+        
+        self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
+        self.entry.place(relx=0.5, y=0, relwidth=0.5, height=25)
+        self.pack()
+
+    @staticmethod
+    def on_entry_validate(value:str):
+        if not value:
+            return True
+        if "." in value and len(value.split(".")[-1]) > 2:
+            return False
+        try:
+            float(value)
+        except ValueError:
+            return False
+        return True    
+
+    def get(self)-> float:                              
+        return float(self.bindVar.get())
+
+    def set(self,value:float):
+        self.bindVar.set(str(value))
+
+
+
 
 class StringUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):

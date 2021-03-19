@@ -183,10 +183,10 @@ class TypeManager(Manager):
         from_=None
         to= None
         if type['sign'] ==  True:
-            to = (type['precision'] * 8)/2
+            to = (type['precision'] * 16)
             from_ = (to-1)*-1 
         else:
-            to = type['precision'] * 8
+            to = type['precision'] * 32
             from_ = 0 
         return from_,to          
 
@@ -212,7 +212,12 @@ class ConfigManager(Manager):
         super(ConfigManager,self).__init__(mgr)
 
     def applyConfig(self,_key,value):
-        self._list[_key]= value 
+        if _key in self._list:
+            config = self._list[_key]
+            for p in value:
+                config[p]=value[p]
+        else:
+            self._list[_key]= value    
 
 class TaskManager(Manager):
     def __init__(self,mgr):

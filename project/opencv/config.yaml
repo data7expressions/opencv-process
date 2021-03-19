@@ -11,17 +11,7 @@ Type:
 
 
 Config:
-  Task:
-    CvtColor:
-      description:
-      input:
-      - name: source 
-        type: cvImage
-      - name: code 
-        type: Enum.ColorConversion
-      output:
-      - name: default 
-        type: cvImage
+  Task:    
     ImRead:
       description:
       input:
@@ -37,6 +27,29 @@ Config:
         type: filepath
       - name: img 
         type: cvImage
+    CvtColor:
+      description:
+      input:
+      - name: source 
+        type: cvImage
+      - name: code 
+        type: Enum.ColorConversion
+      output:
+      - name: default 
+        type: cvImage
+    Canny:
+      description: Canny edge detector
+      input:
+      - name: image 
+        type: cvImage
+      - name: threshold1 
+        type: byte
+      - name: threshold2 
+        type: byte  
+      output:
+      - name: default 
+        type: cvImage
+
 
     
 

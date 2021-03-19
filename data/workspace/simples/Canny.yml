@@ -1,0 +1,69 @@
+Process:
+  test:
+    input:
+      - name: source
+        type: filepath
+        default: data/source.jpg
+      - name: target
+        type: filepath
+        default: data/target.jpg
+    bind: [threshold1,threshold2,sleepSecs,image,result]
+    init:
+      - name: threshold1
+        exp: 10
+      - name: threshold2
+        exp: 150
+      - name: sleepSecs
+        exp: 1   
+    nodes:
+      start:
+        type: start
+        transition: 
+        - target: readImage
+      readImage:
+        type: task
+        task: ImRead
+        input:
+        - name: filename 
+          exp: $source
+        output: 
+        - name: default 
+          assig: image
+        transition: 
+        - target: transform
+      transform:
+        type: task
+        task: Canny
+        input:
+        - name: image
+          exp: $image
+        - name: threshold1
+          exp: $threshold1
+        - name: threshold2
+          exp: $threshold2       
+        output: 
+        - name: default 
+          assig: result
+        transition: 
+        - target: sleep
+      sleep:
+        type: task
+        task: Sleep
+        input:
+        - name: secs
+          exp: $sleepSecs
+        transition: 
+        - target: transform  
+      # save:
+      #   type: task
+      #   task: ImWrite
+      #   input:
+      #   - name: filename
+      #     exp: $target
+      #   - name: img
+      #     exp: $result
+      #   transition: 
+      #   - target: transform
+      # end:
+      #   type: end   
+    

@@ -7,13 +7,21 @@ opencv lab
 ## Python
 - [curso python](https://www.youtube.com/playlist?list=PL2PZw96yQChwQjUsXbDMtKmAgqj6jV-do)
 
-## BPM
+# BPM
  - [Notation](https://www.lucidchart.com/pages/bpmn-symbols-explained)
  - [Tutorial](https://camunda.com/bpmn/reference/)
  - [tutorial](http://www3.cis.gsu.edu/dtruex/courses/cis4120/sessions/Session%203%20-%20Level%201%20BPMN/Introduction_to_BPMN/BPMN%20Levels.pdf) 
 
+## BPMN Tool
+- [github](https://github.com/Areda-Kalai/BPMN-Tool) 
 
-## libreries
+## Carmunda
+- [site](https://camunda.com/products/camunda-bpm/modeler/)
+
+## Adhesive
+- [site](https://germaniumhq.com/2019/10/18/2019-10-18-Creating-a-New-Python-BPMN-Process-With-Adhesive/)
+
+# libreries
 - [resumen](https://github.com/vinta/awesome-python)
 - [guid libreries](https://wiki.python.org/moin/GuiProgramming) 
 - [numpy](https://numpy.org/)
@@ -27,6 +35,18 @@ opencv lab
 - [pydot](https://github.com/pydot/pydot)
 
 - [tkinke+graphviz](https://github.com/Srinivas11789/PcapXray) 
+
+## casymda
+- [pypi](https://pypi.org/project/casymda/)
+- [github](https://github.com/fladdimir/casymda)
+- [info]
+  - https://fladdimir.github.io/post/casymda/
+  - https://fladdimir.github.io/post/csa-simulation-based-sc-forecast/
+  - https://casymda.github.io/page/Webpage/Prozesse.html
+
+## Sympy
+- [wiki](https://simpy.readthedocs.io/en/latest/examples/carwash.html)
+
 
 ## Shapes
 https://github.com/bentlema/tkshapes

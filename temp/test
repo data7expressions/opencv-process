@@ -3,15 +3,13 @@ digraph {
 	node [shape=circle]
 	start [label=start]
 	node [shape=box]
-	readImage [label="img=ImRead(filename:$source)"]
+	readImage [label="image=ImRead(filename:$source)"]
 	node [shape=box]
-	transform [label="gray=CvtColor(source:$img,code:$colorConversion)"]
+	transform [label="result=Canny(image:$image,threshold1:$threshold1,threshold2:$threshold2)"]
 	node [shape=box]
-	save [label="ImWrite(filename:$target,img:$gray)"]
-	node [shape=doublecircle]
-	end [label=end]
+	sleep [label="Sleep(secs:$sleepSecs)"]
 	start -> readImage
 	readImage -> transform
-	transform -> save
-	save -> end
+	transform -> sleep
+	sleep -> transform
 }

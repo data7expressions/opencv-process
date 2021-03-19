@@ -161,7 +161,8 @@ class TreeFilePanel(Frame):
         directories = []
         files = []
         for item in listdir(_path):
-            if path.isdir(item): directories.append(item)
+            fullpath = path.join(_path, item)
+            if path.isdir(fullpath): directories.append(item)
             else : files.append(item)
 
         directories.sort()
