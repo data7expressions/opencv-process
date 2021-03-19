@@ -53,17 +53,5 @@ Process:
         - name: secs
           exp: $sleepSecs
         transition: 
-        - target: transform  
-      # save:
-      #   type: task
-      #   task: ImWrite
-      #   input:
-      #   - name: filename
-      #     exp: $target
-      #   - name: img
-      #     exp: $result
-      #   transition: 
-      #   - target: transform
-      # end:
-      #   type: end   
+        - target: transform   
     
