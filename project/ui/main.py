@@ -14,20 +14,71 @@ from PIL import ImageTk, Image
 from ..core.base import *
 from ..core.manager import *
 from ..core.uiTkinter import *
+from ttkthemes import ThemedStyle
 
 class MainUi(Frame):
     def __init__(self, master, mgr,**kw):
         super(MainUi, self).__init__(master,mgr,UiMediatior(),**kw)
 
     def init(self):
+        self.style = ThemedStyle(self)
         self.toolbar = ToolbarPanel(self, self.mgr,self.mediator)               
         self.tree = TreeFilePanel(self, self.mgr,self.mediator)        
         self.tabs = TabsFilePanel(self, self.mgr,self.mediator)
-        self.toolbar.load(self.config['Commands'])
+        self.master.config(menu=self.createMenu())
+        self.toolbar.load([{'command':'new'},{'command':'open'}]) 
+       
+    # #    black
+    # # ,adapta,arc,ubuntu
+    # # winxpblue,yaru
+    #     self.style.theme_use('keramik') 
+    #     # themes= self.style.theme_names()
+    #     # print(themes)
+    #     # ['default', 'black', 'clam', 'adapta', 'arc', 'scidsand', 'winxpblue'
+    #     # , 'equilux', 'plastik', 'breeze', 'blue', 'scidpink', 'scidblue'
+    #     # , 'ubuntu', 'scidgrey', 'aquativo', 'elegance', 'kroc', 'clearlooks'
+    #     # , 'alt', 'scidpurple', 'itft1', 'scidmint', 'scidgreen', 'classic'
+    #     # , 'yaru', 'radiance', 'smog', 'keramik']
+        
+    def createMenu(self):
+        menubar = tk.Menu(self)
+        filemenu = tk.Menu(menubar,tearoff=0)
+        editmenu = tk.Menu(menubar,tearoff=0)
+        viewmenu = tk.Menu(menubar,tearoff=0)
+        helpmenu = tk.Menu(menubar,tearoff=0) 
 
-    @property
-    def config(self):
-        return self.mgr.Config.Ui['Main']    
+        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label="Edit", menu=editmenu)
+        menubar.add_cascade(label="View", menu=viewmenu)
+        menubar.add_cascade(label="Help", menu=helpmenu)
+
+        filemenu.add_command(label="New")
+        filemenu.add_command(label="Open")
+        filemenu.add_command(label="Save")
+        filemenu.add_command(label="Save As...")
+        filemenu.add_command(label="Close")
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.master.quit)
+
+        thememenu = tk.Menu(menubar,tearoff=0)       
+        viewmenu.add_cascade(label="Theme", menu=thememenu)
+        vTheme = tk.StringVar()
+        vTheme.trace("w", lambda name, index, mode, sv=vTheme: self.theme_onChange(vTheme))
+        thememenu.add_radiobutton(label="adapta", var=vTheme, value='adapta')
+        thememenu.add_radiobutton(label="arc", var=vTheme, value='arc')
+        thememenu.add_radiobutton(label="black", var=vTheme, value='black')
+        thememenu.add_radiobutton(label="ubuntu", var=vTheme, value='ubuntu')
+        thememenu.add_radiobutton(label="winxpblue", var=vTheme, value='winxpblue')
+        thememenu.add_radiobutton(label="yaru", var=vTheme, value='yaru')
+        vTheme.set('black')
+        viewmenu.add_command(label="Zoom In")
+        viewmenu.add_command(label="Zoom Out")
+
+        return menubar
+
+    def theme_onChange(self,vTheme):
+        self.style.theme_use(vTheme.get()) 
+        # self.mediator.send(self,'change','theme',{'name': vTheme.get()})     
 
     def layout(self):
         # https://recursospython.com/guias-y-manuales/posicionar-elementos-en-tkinter/
@@ -43,15 +94,22 @@ class MainUi(Frame):
         tk.Grid.rowconfigure(self, 1, weight=1)
         tk.Grid.columnconfigure(self, 1, weight=11)
         self.tabs.grid(row=1, column=1, sticky="nsew")        
-        self.pack(fill=tk.BOTH, expand=tk.YES)   
+        self.pack(fill=tk.BOTH, expand=tk.YES) 
+
+    @property
+    def config(self):
+        return self.mgr.Config.Ui['Main'] 
 
     def set(self, workspacePath):
         name = path.basename(workspacePath)
         self.master.title(name)
         self.tree.load(workspacePath)
 
-    def onMessage(self,sender,verb,resource,args):       
-        print(verb)
+    def onMessage(self,sender,verb,resource,args):
+        pass       
+        # if verb== 'change' and resource == 'theme':
+        #      self.style.theme_use(args['name'])  
+           
 
     def onClose(self):
         row_id = self.tree.focus()
@@ -118,10 +176,6 @@ class ContainerUi(Frame):
     def current(self,value):
         if self.currentEditor != None:
             self.currentEditor.current = value
-            if value :                               
-                commands = self.currentEditor.config['Commands'] if 'Commands' in self.currentEditor.config else {} 
-                if commands != None:
-                    self.mediator.send(self,'add','command',{'commands':commands,'contextual': True})
 
     def set(self, fullpath):
         editor  = self.getEditor(fullpath)
@@ -149,9 +203,11 @@ class ContainerUi(Frame):
         return self.currentEditor
 
 class FileEditor(Frame):
-    def __init__(self, master, mgr,mediator,**kw):        
-        super(FileEditor, self).__init__(master, mgr,mediator,**kw)
+    def __init__(self, master, mgr,mediator,**kw):
         self._current= False
+        self._status = tk.StringVar()
+        self._status.trace("w", lambda name, index, mode, sv=self._status: self.status_onChange(self._status.get()))        
+        super(FileEditor, self).__init__(master, mgr,mediator,**kw)
 
     @property
     def config(self):
@@ -164,7 +220,10 @@ class FileEditor(Frame):
 
     @current.setter
     def current(self,value):
-        self._current=value      
+        self._current=value  
+
+    def status_onChange(self,status):
+        pass        
 
 class FileImageUi(FileEditor):
     def __init__(self, master, mgr,mediator,**kw):
@@ -212,12 +271,12 @@ class ProcessDiagramPanel(Frame):
 
         try:
             nodes = spec['nodes']
-            starts = dict(filter(lambda p: p[1]['type'] == 'Start', nodes.items()))
+            starts = dict(filter(lambda p: p[1]['type'] == 'start', nodes.items()))
             for name in starts:
                 f.attr('node', shape='circle')
                 f.node(name, name)
 
-            tasks = dict(filter(lambda p: p[1]['type'] == 'Task', nodes.items()))
+            tasks = dict(filter(lambda p: p[1]['type'] == 'task', nodes.items()))
             for name in tasks:
                 task = tasks[name]
 
@@ -240,7 +299,7 @@ class ProcessDiagramPanel(Frame):
                 f.attr('node', shape='box')
                 f.node(name, label)
 
-            ends = dict(filter(lambda p: p[1]['type'] == 'End', nodes.items()))
+            ends = dict(filter(lambda p: p[1]['type'] == 'end', nodes.items()))
             for name in ends:
                 f.attr('node', shape='doublecircle')
                 f.node(name, name)
@@ -327,9 +386,9 @@ class StringUi(Control):
     def set(self,value):
         self.bindVar.set(value)
 
-class FilePathUi(Control):
+class FilepathUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
-        super(FilePathUi, self).__init__(type,var,varName,mgr,master,**kw)
+        super(FilepathUi, self).__init__(type,var,varName,mgr,master,**kw)
         self.bindVar = tk.StringVar()
         self.bindVar.trace("w", lambda name, index, mode, sv=self.bindVar: self.onChanged())
         
@@ -443,7 +502,7 @@ class CvImageUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None, **kw):
         super(CvImageUi, self).__init__(type,var,varName,mgr,master,**kw)
                
-        self.lblTitle = tk.Label(self,height=1,bg="blue")
+        self.lblTitle = ttk.Label(self,style="BW.TLabel")
         self.lblTitle.pack(fill='x')
         self.lblTitle.config(text=varName)        
 
@@ -477,7 +536,7 @@ class ControlsPanel(Frame):
     def init(self):
         self._controls={}
         if self.title:  
-            self.lblTitle = tk.Label(self,text=self.title,anchor='w', bg='#000', fg='#fff',padx=1) 
+            self.lblTitle = ttk.Label(self,text=self.title,anchor='w',style="BW.TLabel") 
 
     def layout(self):
         if self.title:
@@ -541,23 +600,22 @@ class FileProcessUi(FileEditor):
         self.processVarsPanel = ControlsPanel(self,self.mgr,self.mediator,title='bind vars')
         self.grapthVarsPanel = GrapthPanel(self,self.mgr,self.mediator,title='bind grapth')
         self.processInstance = None
+        self._status.set('stopped')
+        
 
     def layout(self):
         self.diagram.place(relx=0, rely=0,relwidth=0.75, relheight=0.75)
-        self.diagram.configure(background='red')
-        self.inputVarsPanel.place(relx=0.75, rely=0,relwidth=0.25, relheight=0.25)
-        self.inputVarsPanel.configure(background='yellow')
-        self.processVarsPanel.place(relx=0.75, rely=0.25,relwidth=0.25, relheight=0.75)
-        self.processVarsPanel.configure(background='blue')
-        self.grapthVarsPanel.place(relx=0, rely=0.75,relwidth=0.75, relheight=0.25)
-        self.grapthVarsPanel.configure(background='pink')
+        self.inputVarsPanel.place(relx=0.75, rely=0,relwidth=0.25, relheight=0.20)
+        self.processVarsPanel.place(relx=0.75, rely=0.25,relwidth=0.25, relheight=0.55)
+        self.grapthVarsPanel.place(relx=0, rely=0.75,relwidth=1, relheight=0.25)
         self.pack(fill=tk.BOTH, expand=tk.YES)
 
     def set(self, fullpath):       
 
-        context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
-                  ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
-                  }
+        # context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
+        #           ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
+        #           }
+        context ={'__workspace':self.mgr.context['workspace']}          
         spec = self.getProcess(fullpath)          
         self.processInstance = self.mgr.Process.apply(spec['name'],spec,context)
 
@@ -581,6 +639,9 @@ class FileProcessUi(FileEditor):
         self.processVarsPanel.onChange+= self.control_onChange
         self.grapthVarsPanel.onChange+= self.control_onChange
         
+ 
+  
+
 
     def onMessage(self,sender,verb,resource,args): 
         if self.current == False:
@@ -612,22 +673,45 @@ class FileProcessUi(FileEditor):
         return spec
 
     def process_start(self):
+        self._status.set('started')
         self.mgr.Process.start(self.processInstance)
-    def process_stop(self):
+    def process_stop(self):        
         if self.processInstance != None and self.processInstance.id != None:
+           self._status.set('stopped')
            self.mgr.Process.stop(self.processInstance.id) 
     def process_pause(self):
         if self.processInstance != None and self.processInstance.id != None:
+           self._status.set('paused') 
            self.mgr.Process.pause(self.processInstance.id)
+
+    def status_onChange(self,status):
+        commands= []
+        if status == 'started':
+            commands.append({'command':'pause','resource':'process'})
+            commands.append({'command':'stop','resource':'process'})
+        elif status == 'stopped':
+            commands.append({'command':'start','resource':'process'})
+        elif status == 'paused':
+            commands.append({'command':'start','resource':'process'})
+            commands.append({'command':'stop','resource':'process'})            
+
+        self.mediator.send(self,'add','command',{'commands':commands,'contextual': True})
+           
+    def process_context_onChange(self,key,value,oldValue):
+
+        if key == '__last':
+           if value['type']=='end':
+               self._status.set('stopped')  
+
+        if key in self.grapthVars:
+            self.grapthVarsPanel.contextOnChange(key,value)
+        elif key in self.processVars:
+            self.processVarsPanel.contextOnChange(key,value) 
 
     def control_onChange(self,key,value):
         self.processInstance.context[key]=value
 
-    def process_context_onChange(self,key,value,oldValue):
-        if key in self.grapthVars:
-            self.grapthVarsPanel.contextOnChange(key,value)
-        elif key in self.processVars:
-            self.processVarsPanel.contextOnChange(key,value)          
+            
 
 class FileEditorUi(FileEditor):
     def __init__(self, master, mgr,mediator,**kw):

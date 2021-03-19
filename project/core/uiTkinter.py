@@ -158,16 +158,24 @@ class TreeFilePanel(Frame):
         self.load(rootPath)
 
     def load(self, _path, parent=""):
+        directories = []
+        files = []
         for item in listdir(_path):
-            fullpath = path.join(_path, item)
-            if path.isdir(fullpath):
-                child = self.addItem(fullpath, item, 'folder', parent)
-                self.load(fullpath, child)
-            else:
-                filename, file_extension = path.splitext(item)
-                self.addItem(fullpath, filename, file_extension, parent)
+            if path.isdir(item): directories.append(item)
+            else : files.append(item)
 
-        # self.tree.bind("<Double-1>", self.onDoubleClick)
+        directories.sort()
+        files.sort()
+
+        for item in directories:
+            fullpath = path.join(_path, item)
+            child = self.addItem(fullpath, item, 'folder', parent)
+            self.load(fullpath, child)
+        for item in files:
+            fullpath = path.join(_path, item)    
+            filename, file_extension = path.splitext(item)
+            self.addItem(fullpath, filename, file_extension, parent)
+
         self.tree.bind("<<TreeviewSelect>>", self.onSelect)      
 
     def addItem(self, fullpath, name, icon, parent=""):

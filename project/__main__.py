@@ -34,7 +34,7 @@ def ui(mgr):
 
     mgr.Ui.add(CvImageUi)
     mgr.Ui.add(EnumUi)
-    mgr.Ui.add(FilePathUi)  
+    mgr.Ui.add(FilepathUi)  
 
     mgr.applyConfig(path.join(rootpath,'project/ui/config.yaml'))
     

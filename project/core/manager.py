@@ -140,7 +140,7 @@ class ExpManager(Manager):
     def __init__(self,mgr):
         super(ExpManager,self).__init__(mgr)
 
-    def solve(self,exp,context):
+    def solve(self,exp,_type,context):
         if type(exp) is str: 
             if exp.startswith('$'):
                 variable=exp.replace('$','')
@@ -148,6 +148,10 @@ class ExpManager(Manager):
             elif exp.startswith('enum.'):
                 arr=exp.replace('enum.','').split('.')
                 return self.mgr.Enum[arr[0]].value(arr[1])
+
+        if _type == 'filepath' or _type == 'folderpath' :
+            if not path.isabs(exp): 
+                exp = path.join(context['__workspace'], exp)        
         return exp
 
     def var(self,exp):
@@ -161,7 +165,15 @@ class ExpManager(Manager):
 
     def solveParams(self,params,context):  
         for param in params:
-            param['value'] = self.solve(param['exp'],context)                    
+            self.solveParam(param,context)
+
+    def solveParam(self,param,context):
+        value=None
+        if 'exp' in param:
+            value = self.solve(param['exp'],param['type'],context)
+        elif 'default' in param:
+            value = self.solve(param['default'],param['type'],context)  
+        param['value'] =value         
 
 class TypeManager(Manager):
     def __init__(self,mgr):
@@ -250,14 +262,19 @@ class Process:
         return self._spec['nodes'][_key]    
 
     def init(self):
+        if 'input' in self._spec:
+            self.solveParams(self._spec['input'],self._context)
+            for p in self._spec['input']:
+                self._context[p['name']]=p['value']
+
         if 'init' in self._spec:
             self.solveParams(self._spec['init'],self._context)
             for p in self._spec['init']:
-                print(p)
                 self._context[p['name']]=p['value']
 
     def start(self):
-        starts = dict(filter(lambda p: p[1]['type'] == 'Start', self._spec['nodes'].items()))
+        self.context['__status']='running'
+        starts = dict(filter(lambda p: p[1]['type'] == 'start', self._spec['nodes'].items()))
         for name in starts:
             start = starts[name]
             if 'exp' in start:
@@ -266,28 +283,34 @@ class Process:
             else:
                 self.execute(name)        
 
-   
-
-    def restart(self):
-        pass
-        # self.execute(self._context.current)
+    def stop(self):
+        self._context['__status']='stopping'
+    def pause(self):
+        self._context['__status']='pausing'   
 
     def execute(self,_key):
-        node=self.node(_key)
-        type=node['type'] 
-        if type == 'Start':
-            self.nextNode(node)
-        elif type == 'End':
-            self.executeEnd(node)               
-        elif type == 'Task':
-            self.executeTask(node)
-            self.nextNode(node)
+        if self._context['__status']=='running':            
+            node=self.node(_key)
+            self._context['__current']=node 
+            type=node['type'] 
+            if type == 'start':
+                self.executeStart(node)
+            elif type == 'task':
+                self.executeTask(node)    
+            elif type == 'end':
+                self.executeEnd(node)            
 
-        print('executed:'+_key)    
-        
+            self._context['__last']=node  
+            self.nextNode(node)
+        elif self._context['__status']=='pausing':
+            self._context['__status']='paused'   
+        elif self._context['__status']=='stopping':
+            self._context['__status']='stopped'              
+
+    def executeStart(self,node):
+        pass    
     def executeEnd(self,node):
         pass
-
     def executeTask(self,node):
         try:
             taskManager = self.mgr.Task[node['task']]
@@ -339,7 +362,14 @@ class ProcessManager(Manager):
             return process.id
         except Exception as ex:
             print(ex)
-            raise        
+            raise
+
+    def stop(self,id):
+        self._instances[id]['process'].stop() 
+
+    def pause(self,id):
+        self._instances[id]['process'].pause()     
+
 
     def _process_start(self,process):
         process.start()
@@ -354,21 +384,27 @@ class ProcessManager(Manager):
     def completeSpec(self,_key,spec:dict):
         spec['name']= _key        
         for _key in spec['nodes']:
-            self.completeSpecNode(spec['nodes'][_key])
+            node=spec['nodes'][_key]
+            node['name']=_key
+            self.completeSpecNode(node)
         self.completeSpecVars(spec)
     def completeSpecVars(self,spec:dict):
         vars={}
         if 'input' in spec:
             for p in spec['input']:
-                vars[p['name']]={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}  
+                var={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}  
+                if 'default' in p : var['default'] = p['default']
+                vars[p['name']]=var 
         if 'nodes' in spec:
             for _key in spec['nodes']:
                 node=spec['nodes'][_key]
                 if 'input' in node:
                     for p in node['input']:
-                        var =self.mgr.Exp.var(p['exp'])
-                        if var != None:
-                            vars[var]={'type':p['type'],'bind':(True if var in spec['bind'] else False )}  
+                        varName =self.mgr.Exp.var(p['exp'])
+                        if varName != None:
+                            var={'type':p['type'],'bind':(True if varName in spec['bind'] else False )}
+                            if 'default' in p : var['default'] = p['default']
+                            vars[varName]=var   
                 if 'output' in node:
                     for p in node['output']:
                         vars[p['assig']]={'type':p['type'],'bind':(True if p['assig'] in spec['bind'] else False )}
@@ -376,12 +412,20 @@ class ProcessManager(Manager):
         for name in vars:
             vars[name]['isInput']= len(list(filter (lambda p : p['name'] == name, spec['input']))) > 0
 
+        if 'init' in spec:
+            for p in spec['init']:
+                if p['name'] in vars:
+                    var = vars[p['name']]
+                    p['type']=var['type']
+
+
+
         spec['vars']=vars
     def completeSpecNode(self,node):
         type=node['type'] 
-        if type == 'Start':self.completeSpecNodeStart(node)
-        elif type == 'End':self.completeSpecNodeEnd(node)            
-        elif type == 'Task': self.completeSpecNodeTask(node) 
+        if type == 'start':self.completeSpecNodeStart(node)
+        elif type == 'end':self.completeSpecNodeEnd(node)            
+        elif type == 'task': self.completeSpecNodeTask(node) 
         return self.completeSpecNodeDefault(node) 
     def completeSpecNodeDefault(self,node):
         self.completeSpecTransition(node)

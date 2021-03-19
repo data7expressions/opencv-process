@@ -6,16 +6,5 @@ Config:
     FileProcess:
       #la idea es usar la extension ypml 
       extensions: [yml]
-      Commands:       
-      - command: start
-        resource: process
-      - command: pause
-        resource: process
-      - command: stop
-        resource: process   
     FileEditor:
       extensions: [yaml]
-    Main:
-      Commands:
-      - command: new
-      - command: open 

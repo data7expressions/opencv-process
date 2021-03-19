@@ -26,7 +26,7 @@ Config:
       description:
       input:
       - name: filename 
-        type: filePath
+        type: filepath
       output: 
       - name: default
         type: cvImage 
@@ -34,7 +34,7 @@ Config:
       description:
       input:
       - name: filename 
-        type: filePath
+        type: filepath
       - name: img 
         type: cvImage
 

@@ -59,13 +59,13 @@ Type:
   filename:
     base: string
     ctl: filename
-  filePath:
+  filepath:
     base: string
-    ctl: FilePath
+    ctl: Filepath
     re: (.+?)(\.[^.]*$|$)
-  folderPath:
+  folderpath:
     base: string
-    ctl: folderPath
+    ctl: folderpath
     re: \\(\\\w+)*\\  
   email:
     base: string

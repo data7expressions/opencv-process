@@ -2,20 +2,22 @@ Process:
   test:
     input:
       - name: source
-        type: filePath
+        type: filepath
+        default: data/source.jpg
       - name: target
-        type: filePath
+        type: filepath
+        default: data/target.jpg
     bind: [colorConversion,img,gray]
     init:
       - name: colorConversion
         exp: enum.ColorConversion.BGR2RGB
     nodes:
       start:
-        type: Start
+        type: start
         transition: 
         - target: readImage
       readImage:
-        type: Task
+        type: task
         task: ImRead
         input:
         - name: filename 
@@ -26,7 +28,7 @@ Process:
         transition: 
         - target: transform
       transform:
-        type: Task
+        type: task
         task: CvtColor
         input:
         - name: source
@@ -39,7 +41,7 @@ Process:
         transition: 
         - target: save
       save:
-        type: Task
+        type: task
         task: ImWrite
         input:
         - name: filename
@@ -49,5 +51,5 @@ Process:
         transition: 
         - target: end
       end:
-        type: End   
+        type: end   
     
