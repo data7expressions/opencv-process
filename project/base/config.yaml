@@ -51,7 +51,13 @@ Type:
     struct:
       x: int
       y: int
-    ctl: Point   
+    ctl: Point
+  Coordinate:
+    struct:
+      x: int
+      y: int
+      z: int
+    ctl: Coordinate     
   Size:
     struct:
       width: int

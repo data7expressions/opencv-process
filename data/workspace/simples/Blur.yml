@@ -4,12 +4,10 @@ Process:
       - name: source
         type: filepath
         default: data/source.jpg
-    bind: [threshold1,threshold2,sleepSecs,image,result]
+    bind: [ratio,sleepSecs,image,result]
     init:
-      - name: threshold1
-        exp: 10
-      - name: threshold2
-        exp: 150
+      - name: ratio
+        exp: 100
       - name: sleepSecs
         exp: 1   
     nodes:
@@ -30,14 +28,12 @@ Process:
         - target: transform
       transform:
         type: task
-        task: Canny
+        task: Blur
         input:
         - name: image
           exp: $image
-        - name: threshold1
-          exp: $threshold1
-        - name: threshold2
-          exp: $threshold2       
+        - name: ratio
+          exp: $ratio         
         output: 
         - name: default 
           assig: result

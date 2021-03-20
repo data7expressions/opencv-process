@@ -487,15 +487,17 @@ class PointUi(Control):
         xType = self.mgr.Type['int']
         from_,to=mgr.Type.range(xType) 
         
+        self.lbl = tk.Label(self,text=varName)
         self.xlbl = tk.Label(self,text='x')        
         self.xSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varX,command=self.onChanged)
         self.ylbl = tk.Label(self,text='x')        
         self.ySbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varY,command=self.onChanged)       
         
-        self.xlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.xSbox.place(relx=0.1, y=0, relwidth=0.3, height=25)
-        self.ylbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
-        self.ySbox.place(relx=0.6, y=0, relwidth=0.3, height=25)
+        self.lbl.place(relx=0, y=0,relwidth=0.3, height=25)
+        self.xlbl.place(relx=0.3, y=0,relwidth=0.1, height=25)
+        self.xSbox.place(relx=0.4, y=0, relwidth=0.25, height=25)
+        self.ylbl.place(relx=0.65, y=0,relwidth=0.1, height=25)
+        self.ySbox.place(relx=0.75, y=0, relwidth=0.25, height=25)
         self.pack()
 
     def get(self)->dict:                              
@@ -504,6 +506,41 @@ class PointUi(Control):
     def set(self,value:dict):
         self.varX.set(value['x'])
         self.varY.set(value['y'])
+
+class CoordinateUi(Control):
+    def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
+        super(CoordinateUi, self).__init__(type,var,varName,mgr,master,**kw)
+        self.varX = tk.IntVar()
+        self.varY = tk.IntVar()
+        self.varZ = tk.IntVar()
+
+        xType = self.mgr.Type['int']
+        from_,to=mgr.Type.range(xType) 
+        
+        self.lbl = tk.Label(self,text=varName)
+        self.xlbl = tk.Label(self,text='x')        
+        self.xSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varX,command=self.onChanged)
+        self.ylbl = tk.Label(self,text='x')        
+        self.ySbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varY,command=self.onChanged) 
+        self.zlbl = tk.Label(self,text='x')        
+        self.zSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varZ,command=self.onChanged)       
+        
+        self.lbl.place(relx=0, y=0,relwidth=0.25, height=25)
+        self.xlbl.place(relx=0.25, y=0,relwidth=0.1, height=25)
+        self.xSbox.place(relx=0.35, y=0, relwidth=0.15, height=25)
+        self.ylbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
+        self.ySbox.place(relx=0.6, y=0, relwidth=0.15, height=25)
+        self.zlbl.place(relx=0.75, y=0,relwidth=0.1, height=25)
+        self.zSbox.place(relx=0.85, y=0, relwidth=0.15, height=25)
+        self.pack()
+
+    def get(self)->dict:                              
+        return {'x':self.varX.get(),'y': self.varY.get(),'z': self.varZ.get()}
+
+    def set(self,value:dict):
+        self.varX.set(value['x'])
+        self.varY.set(value['y'])
+        self.varZ.set(value['z'])
 
 class SizeUi(Control):
     def __init__(self,type:dict,var:dict,varName:str,mgr=None,master=None,**kw):
@@ -514,15 +551,17 @@ class SizeUi(Control):
         wType = self.mgr.Type['int']
         from_,to=mgr.Type.range(wType) 
         
+        self.lbl = tk.Label(self,text=varName)
         self.wlbl = tk.Label(self,text='w')        
         self.wSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varW,command=self.onChanged)
         self.hlbl = tk.Label(self,text='h')        
         self.hSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varH,command=self.onChanged)       
         
-        self.wlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.wSbox.place(relx=0.1, y=0, relwidth=0.3, height=25)
-        self.hlbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
-        self.hSbox.place(relx=0.6, y=0, relwidth=0.3, height=25)
+        self.lbl.place(relx=0, y=0,relwidth=0.3, height=25)
+        self.wlbl.place(relx=0.3, y=0,relwidth=0.1, height=25)
+        self.wSbox.place(relx=0.4, y=0, relwidth=0.25, height=25)
+        self.hlbl.place(relx=0.65, y=0,relwidth=0.1, height=25)
+        self.hSbox.place(relx=0.75, y=0, relwidth=0.25, height=25)
         self.pack()
 
     def get(self)->dict:                              
@@ -543,6 +582,7 @@ class RectangleUi(Control):
         xType = self.mgr.Type['int']
         from_,to=mgr.Type.range(xType) 
         
+        self.lbl = tk.Label(self,text=varName)
         self.xlbl = tk.Label(self,text='x')        
         self.xSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varX,command=self.onChanged)
         self.ylbl = tk.Label(self,text='x')        
@@ -552,14 +592,15 @@ class RectangleUi(Control):
         self.hlbl = tk.Label(self,text='h')        
         self.hSbox = tk.Spinbox(self, from_= from_, to = to, textvariable=self.varH,command=self.onChanged)          
         
-        self.xlbl.place(relx=0, y=0,relwidth=0.1, height=25)
-        self.xSbox.place(relx=0.1, y=0, relwidth=0.15, height=25)
-        self.ylbl.place(relx=0.25, y=0,relwidth=0.1, height=25)
-        self.ySbox.place(relx=0.35, y=0, relwidth=0.15, height=25)
-        self.wlbl.place(relx=0.5, y=0,relwidth=0.1, height=25)
-        self.wSbox.place(relx=0.6, y=0, relwidth=0.15, height=25)
-        self.hlbl.place(relx=0.75, y=0,relwidth=0.1, height=25)
-        self.hSbox.place(relx=0.85, y=0, relwidth=0.15, height=25)
+        self.lbl.place(relx=0, y=0,relwidth=0.2, height=25)
+        self.xlbl.place(relx=0.2, y=0,relwidth=0.075, height=25)
+        self.xSbox.place(relx=0.275, y=0, relwidth=0.125, height=25)
+        self.ylbl.place(relx=0.4, y=0,relwidth=0.075, height=25)
+        self.ySbox.place(relx=0.475, y=0, relwidth=0.125, height=25)
+        self.wlbl.place(relx=0.6, y=0,relwidth=0.075, height=25)
+        self.wSbox.place(relx=0.675, y=0, relwidth=0.125, height=25)
+        self.hlbl.place(relx=0.8, y=0,relwidth=0.075, height=25)
+        self.hSbox.place(relx=0.875, y=0, relwidth=0.125, height=25)
         self.pack()
 
     def get(self)->dict:                              

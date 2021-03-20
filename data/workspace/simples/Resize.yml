@@ -4,9 +4,6 @@ Process:
       - name: source
         type: filepath
         default: data/source.jpg
-      - name: target
-        type: filepath
-        default: data/target.jpg
     bind: [percent,sleepSecs,image,result]
     init:
       - name: percent

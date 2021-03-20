@@ -207,7 +207,7 @@ class EnumManager(Manager):
         super(EnumManager,self).__init__(mgr)
 
     def applyConfig(self,_key,value):
-        self._list[_key]= Enum(value) 
+        self._list[_key]= Enum(value['values']) 
 
 class ConfigManager(Manager):
     def __init__(self,mgr):
