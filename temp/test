@@ -5,7 +5,7 @@ digraph {
 	node [shape=box]
 	readImage [label="image=ImRead(filename:$source)"]
 	node [shape=box]
-	transform [label="result=MorphologyEx(image:$image,operation:$operation,elementType:$elementType,elementSize:$elementSize,iterations:$iterations)"]
+	transform [label="result=Rotate(image:$image,angle:$angle)"]
 	node [shape=box]
 	sleep [label="Sleep(secs:$sleepSecs)"]
 	start -> readImage

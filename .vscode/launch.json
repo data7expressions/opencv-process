@@ -7,7 +7,14 @@
         {
             "name": "Python: Current File",
             "type": "python",
-            "request": "launch",            
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: App",
+            "type": "python",
+            "request": "launch",
             "console": "integratedTerminal",
             "module": "project"
         }
