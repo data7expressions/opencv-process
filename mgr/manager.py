@@ -51,9 +51,7 @@ class MainManager(Manager):
         return self._context
     @context.setter
     def context(self,value):
-        self._context=value  
-
-      
+        self._context=value       
 
     def init(self,plugins=[]):
         
@@ -65,7 +63,10 @@ class MainManager(Manager):
         self.add(ProcessManager) 
         self.add(TestManager)
         self.add(HelperManager)
-        self.add(UiManager)
+        self.add(UiManager) 
+        
+        dir_path = path.dirname(path.realpath(__file__))
+        self.loadPlugin(path.join(dir_path,'main'))
 
         for p in plugins:
             self.loadPlugin(p)

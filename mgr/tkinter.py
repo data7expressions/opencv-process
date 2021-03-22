@@ -98,7 +98,6 @@ class Frame(tk.Frame):
     def onMessage(self,sender,verb,resource,args):
         pass
 
-
 class ToolbarPanel(Frame):
     def __init__(self, master,mgr,mediator):        
         super(ToolbarPanel,self).__init__(master,mgr,mediator)        

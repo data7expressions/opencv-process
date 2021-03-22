@@ -4,17 +4,16 @@ from tkinter import *
 from os import path,getcwd,listdir
 #from mgr.core import *
 # from mgr.process import *
-from .core.base import *
-from .core.manager import * 
-from .core.uiTkinter import *
+from mgr.base import *
+from mgr.manager import * 
+from mgr.uiTkinter import *
 from .ui.main import *
 
 rootpath = getcwd()
 
 def init():   
    plugins= []
-   plugins.append(path.join(rootpath,'project/base'))
-   plugins.append(path.join(rootpath,'project/opencv'))
+   plugins.append(path.join(rootpath,'plugins/opencv'))
 #    plugins.append(path.join(rootpath,'project/ui'))
    plugins.append(path.join(rootpath,'data/workspace'))
 

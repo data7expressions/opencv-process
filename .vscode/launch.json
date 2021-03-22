@@ -12,6 +12,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Test Expression",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "expression"
+        },
+        {
             "name": "Python: App",
             "type": "python",
             "request": "launch",
