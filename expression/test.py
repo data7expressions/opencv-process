@@ -35,7 +35,11 @@ class TestExpression(unittest.TestCase):
     def test_variables(self):
         self.assertEqual(exp.solve('a>b',{"a":1,"b":2}),False)
         self.assertEqual(exp.solve('a+b',{"a":1,"b":2}),3)
-        # self.assertEqual(exp.solve('-a*b',{"a":1,"b":2}),-3)
+        self.assertEqual(exp.solve('-a*b',{"a":1,"b":2}),-2)
+        self.assertEqual(exp.solve('a*3==b+1',{"a":1,"b":2}),True)
+        self.assertEqual(exp.solve('(a*b)+(2*a+2*b)',{"a":1,"b":2}),8)
+        self.assertEqual(exp.solve('2**b+a',{"a":1,"b":2}),5)
+        
         
 
     def test_strings(self):

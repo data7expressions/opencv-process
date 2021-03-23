@@ -144,7 +144,7 @@ class ExpManager():
                 a=self.__new(op1,[a,b])
                 op1=op2
             else:
-                b,i = self.__getExpression(chars,i,length,a=b,op1=op2)
+                b,i = self.__getExpression(chars,i,length,a=b,op1=op2,_break=_break)
                 return self.__new(op1,[a,b]),i
 
         return self.__new(op1,[a,b]),i         
@@ -359,7 +359,7 @@ def addElements():
 exp = ExpManager()
 addElements()
 
-result=exp.solve('-a*b',{"a":1,"b":2})
+result=exp.solve('(a*b)+(2*a+2*b)',{"a":1,"b":2})
 print(result)
 # print (1+(2**3)*4) 
 # print ((2**3)) 
