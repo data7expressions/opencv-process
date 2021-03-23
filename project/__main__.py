@@ -6,7 +6,7 @@ from os import path,getcwd,listdir
 # from mgr.process import *
 from mgr.base import *
 from mgr.manager import * 
-from mgr.uiTkinter import *
+from mgr.tkinter import *
 from .ui.main import *
 
 rootpath = getcwd()
