@@ -149,7 +149,8 @@ class IndexDecorator(Operator):
 
 class ExpManager():
     def __init__(self):
-       self.operators={} 
+       self.operators={}
+       self.enums={} 
        self.functions={}
 
     def add(self,k,imp):
@@ -157,6 +158,16 @@ class ExpManager():
       
     def new(self,k,operands):
         return self.operators[k](operands)
+
+    def addEnum(self,key,imp:dict):
+        self.enums[key] =imp 
+
+    def isEnum(self,name):    
+        names = name.split('.')
+        return names[0] in self.enums.keys()
+
+    def getEnumValue(self,name,option): 
+        return self.enums[name][option]
 
     def addFunction(self,key,imp,types=['any']):
         if key not in self.functions.keys():
@@ -311,12 +322,19 @@ class ExpParser():
                 else:
                     value =float(value)
                 operand = Constant(value,'float')
+            elif '.' in value and self.mgr.isEnum(value):
+                  names = value.split('.')
+                  enumName = names[0]
+                  enumOption = names[1] 
+                  enumValue= self.mgr.getEnumValue(enumName,enumOption)
+                  enumType = type(enumValue).__name__
+                  operand = Constant(enumValue,enumType)
             else:
                 operand = Variable(value)
         elif char == '\'' or char == '"':
             self.index+=1
             result=  self.getString(char)
-            operand= Constant(result,'string')
+            operand= Constant(result,'str')
         elif char == '(':
             self.index+=1
             operand=  self.getExpression(_break=')') 
@@ -483,10 +501,6 @@ def addElements():
         def solve(self,a,b):
             return a >> b   
 
-    #exp.add('Constant',Constant)
-    #exp.add('variable',Variable)
-    exp.add('function',Function)
-
     exp.add('+',Addition)
     exp.add('-',Subtraction)
     exp.add('*',Multiplication)
@@ -513,6 +527,15 @@ def addElements():
     exp.add('<<',LeftShift)
     exp.add('>>',RightShift)
 
+
+    exp.addEnum('ColorConversion',{"BGR2GRAY":6
+                                  ,"BGR2HSV":40
+                                  ,"BGR2RGB":4
+                                  ,"GRAY2BGR":8
+                                  ,"HSV2BGR":54
+                                  ,"HSV2RGB":55
+                                  ,"RGB2GRAY":7
+                                  ,"RGB2HSV":41})
 
     exp.addFunction('nvl',lambda a,b: a if a!=None else b )
 
@@ -569,7 +592,7 @@ def addElements():
 exp = ExpManager()
 addElements()
 
-result=exp.solve('a.upper()',{"a":"aaa"})
+result=exp.solve('ColorConversion.GRAY2BGR',{"a":"aaa"})
 # result=exp.solve('a.count()',{"a":[1,2,3]})
 print(result)
 # print (1+(2**3)*4) 

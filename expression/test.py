@@ -53,6 +53,8 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('a.count("b")',{"a":"aaa"}),0) 
         self.assertEqual(exp.solve('a.upper()',{"a":"aaa"}),"AAA") 
 
+    def test_enums(self):
+        self.assertEqual(exp.solve('ColorConversion.GRAY2BGR'),8) 
         
 
         
