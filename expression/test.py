@@ -38,15 +38,21 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('-a*b',{"a":1,"b":2}),-2)
         self.assertEqual(exp.solve('a*3==b+1',{"a":1,"b":2}),True)
         self.assertEqual(exp.solve('(a*b)+(2*a+2*b)',{"a":1,"b":2}),8)
-        self.assertEqual(exp.solve('2**b+a',{"a":1,"b":2}),5)
-        
-        
+        self.assertEqual(exp.solve('2**b+a',{"a":1,"b":2}),5)        
 
     def test_strings(self):
         self.assertEqual(exp.solve('"a"'),"a") 
         self.assertEqual(exp.solve('"a"<"b"'),"a"<"b") 
         self.assertEqual(exp.solve('"a ""b"" "<"b"'),"a ""b"" "<"b") 
 
+    def test_functions(self):
+        self.assertEqual(exp.solve('nvl(a,b)',{"a":None,"b":2}),2) 
+        self.assertEqual(exp.solve('a.capitalize()',{"a":"aaa","b":2}),"Aaa")  
+        self.assertEqual(exp.solve('"aaa".capitalize()'),"Aaa") 
+        self.assertEqual(exp.solve('a.count("a")',{"a":"aaa"}),3)
+        self.assertEqual(exp.solve('a.count("b")',{"a":"aaa"}),0)  
+
+        
 
 def test():
     unittest.main()
