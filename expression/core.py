@@ -154,23 +154,16 @@ class IndexDecorator(Operator):
     def value(self): 
         return self._operands[0].value[self._operands[1].value]
 
+
 class ExpManager():
     def __init__(self):
        self.operators={} 
        self.functions={}
-       self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
-       self.reInt = re.compile('[0-9]+$')
-       self.reFloat = re.compile('(\d+(\.\d*)?|\.\d+)([eE]\d+)?')
-       self.arithmeticOperators = ['+','-','*','/','%','**','//']
-       self.comparisonOperators = ['>','<','>=','<=','!=','==']
-       self.logicalOperators = ['&&','||']
-
-     
 
     def add(self,k,imp):
         self.operators[k]=imp
       
-    def __new(self,k,operands):
+    def new(self,k,operands):
         return self.operators[k](operands)
 
     def addFunction(self,key,imp,types=['any']):
@@ -183,7 +176,7 @@ class ExpManager():
             if type in p['types']:
                 return p['imp']
         return None
-  
+
     def setContext(self,expression,context):
         if type(expression).__name__ ==  'Variable':
             expression.context = context
@@ -201,10 +194,29 @@ class ExpManager():
         return expression.value
 
     def parse(self,string):
-        chars = list(string)
-        length=len(chars)
-        operand,index=  self.__getExpression(chars,0,length)
-        return operand
+        parser = ExpParser(self,string)
+        expression= parser.parse() 
+        del parser
+        return expression   
+
+class ExpParser():
+    def __init__(self,mgr,string):
+       self.mgr = mgr 
+       self.chars = list(string)
+       self.length=len(self.chars)
+       self.index=0
+       self.operators={} 
+       self.functions={}
+       self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
+       self.reInt = re.compile('[0-9]+$')
+       self.reFloat = re.compile('(\d+(\.\d*)?|\.\d+)([eE]\d+)?')
+       self.arithmeticOperators = ['+','-','*','/','%','**','//']
+       self.comparisonOperators = ['>','<','>=','<=','!=','==']
+       self.logicalOperators = ['&&','||']
+
+    def parse(self): 
+        operand,index=  self.__getExpression(self.chars,0,self.length)
+        return operand   
 
     def __getExpression(self,chars,index,length,a=None,op1=None,_break=''):              
         while index < length:
@@ -217,15 +229,15 @@ class ExpManager():
             op2,index= self.__getOperator(chars,index,length)
 
             if op2 == None or op2 in _break:
-                return self.__new(op1,[a,b]),index
+                return self.mgr.new(op1,[a,b]),index
             elif self.__priority(op1)>=self.__priority(op2):
-                a=self.__new(op1,[a,b])
+                a=self.mgr.new(op1,[a,b])
                 op1=op2
             else:
                 b,index = self.__getExpression(chars,index,length,a=b,op1=op2,_break=_break)
-                return self.__new(op1,[a,b]),index
+                return self.mgr.new(op1,[a,b]),index
 
-        return self.__new(op1,[a,b]),index         
+        return self.mgr.new(op1,[a,b]),index         
 
     def __getOperand(self,chars,index,length):        
         isNegative=False
@@ -251,9 +263,9 @@ class ExpManager():
                     variableName= '.'.join(names)
                     variable = Variable(variableName)
                     args.insert(0,variable)
-                    operand= Function(self,key,args,True)
+                    operand= Function(self.mgr,key,args,True)
                 else:
-                    operand= Function(self,value,args)       
+                    operand= Function(self.mgr,value,args)       
 
             elif index<length and chars[index] == '[':    
                 idx, i= self.__getExpression(chars,index+1,length,_break=']')
