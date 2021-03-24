@@ -46,7 +46,6 @@ class Variable(Operand):
         for n in self._names:
             _value=_value[n]
         _value=value       
-
 class Operator(Operand):
     def __init__(self,operands ):
       self._operands  = operands
@@ -95,7 +94,6 @@ class Function(Operator):
             for p in self._operands:args.append(p.value)    
 
         return function(*args)
-
 class KeyValue(Operator):
     def __init__(self,name,value:Operand):
       super(KeyValue,self).__init__([value])
@@ -107,7 +105,6 @@ class KeyValue(Operator):
     @property
     def value(self): 
         return self._operands[0].value
-
 class Array(Operator):
     def __init__(self,elements=[]):
       super(Array,self).__init__([elements])
@@ -118,7 +115,6 @@ class Array(Operator):
         for p in self._operands:
             list.append(p.value)
         return list 
-
 class Object(Operator):
     def __init__(self,attributes=[]):
       super(Object,self).__init__([attributes])
@@ -129,9 +125,6 @@ class Object(Operator):
         for p in self._operands:
             dic[p.name]=p.value
         return dic  
-
-   
-
 class NegativeDecorator(Operator):
     def __init__(self,operand:Operand ):
         super(NegativeDecorator,self).__init__([operand])
@@ -153,7 +146,6 @@ class IndexDecorator(Operator):
     @property
     def value(self): 
         return self._operands[0].value[self._operands[1].value]
-
 
 class ExpManager():
     def __init__(self):
@@ -202,7 +194,7 @@ class ExpManager():
 class ExpParser():
     def __init__(self,mgr,string):
        self.mgr = mgr 
-       self.chars = list(string)
+       self.chars = self.getChars(string)
        self.length=len(self.chars)
        self.index=0
        self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
@@ -212,9 +204,30 @@ class ExpParser():
        self.comparisonOperators = ['>','<','>=','<=','!=','==']
        self.logicalOperators = ['&&','||']
 
-    def parse(self): 
-        operand=  self.getExpression()
-        return operand
+    @staticmethod
+    def getChars(string):
+        isString=False
+        quotes=None
+        result =[]
+        for p in list(string):
+            if isString and p == quotes: isString=False 
+            elif not isString and (p == '\'' or p=='"'):
+                isString=True
+                quotes=p
+            if p != ' ' or isString:
+               result.append(p)
+        return result
+
+    def parse(self):
+        operands=[]
+        while not self.end:
+            operand =self.getExpression(_break=';')
+            if operand == None:break
+            operands.append(operand)
+        if len(operands)==1 :
+            return operands[0]
+        return Array(operands) 
+       
 
     @property
     def previous(self):
@@ -228,9 +241,7 @@ class ExpParser():
     @property
     def end(self):
         return self.index >= self.length
-              
-
-
+    
     def getExpression(self,a=None,op1=None,_break=''):              
         while not self.end:
             if a==None and op1==None: 
