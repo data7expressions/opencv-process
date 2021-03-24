@@ -50,7 +50,10 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('a.capitalize()',{"a":"aaa","b":2}),"Aaa")  
         self.assertEqual(exp.solve('"aaa".capitalize()'),"Aaa") 
         self.assertEqual(exp.solve('a.count("a")',{"a":"aaa"}),3)
-        self.assertEqual(exp.solve('a.count("b")',{"a":"aaa"}),0)  
+        self.assertEqual(exp.solve('a.count("b")',{"a":"aaa"}),0) 
+        self.assertEqual(exp.solve('a.upper()',{"a":"aaa"}),"AAA") 
+
+        
 
         
 

@@ -83,11 +83,11 @@ class Function(Operator):
     @property
     def value(self): 
         args=[]
-        if self.isChild:
+        if self._isChild:
             parent = self._operands.pop(0)
             value = parent.value
             _type = type(value).__name__
-            function=self.mgr.getFunction(_type+'_'+self.name)            
+            function=self.mgr.getFunction(self.name,_type)            
             for p in self._operands:args.append(p.value)
             args.insert(0,value)            
         else:
@@ -96,18 +96,41 @@ class Function(Operator):
 
         return function(*args)
 
-# class FunctionDecorator(Operator):
-#     def __init__(self,operand:Operand,func:Function ):
-#         super(FunctionDecorator,self).__init__([operand,func])
+class KeyValue(Operator):
+    def __init__(self,name,value:Operand):
+      super(KeyValue,self).__init__([value])
+      self._name  = name
 
-#     @property    
-#     def value(self):
-#         value = self._operands[0].value
-#         self._operands[1].type = type(value).__name__
+    @property
+    def name(self):
+        return self._name  
+    @property
+    def value(self): 
+        return self._operands[0].value
 
-#         self._operands[1].operands.insert(0,self._operands[0])
-#         return self._operands[1].value
-       
+class Array(Operator):
+    def __init__(self,elements=[]):
+      super(Array,self).__init__([elements])
+
+    @property
+    def value(self):
+        list= []
+        for p in self._operands:
+            list.append(p.value)
+        return list 
+
+class Object(Operator):
+    def __init__(self,attributes=[]):
+      super(Object,self).__init__([attributes])
+
+    @property
+    def value(self):
+        dic= {}
+        for p in self._operands:
+            dic[p.name]=p.value
+        return dic  
+
+   
 
 class NegativeDecorator(Operator):
     def __init__(self,operand:Operand ):
@@ -135,10 +158,14 @@ class ExpManager():
     def __init__(self):
        self.operators={} 
        self.functions={}
+       self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
        self.reInt = re.compile('[0-9]+$')
        self.reFloat = re.compile('(\d+(\.\d*)?|\.\d+)([eE]\d+)?')
        self.arithmeticOperators = ['+','-','*','/','%','**','//']
        self.comparisonOperators = ['>','<','>=','<=','!=','==']
+       self.logicalOperators = ['&&','||']
+
+     
 
     def add(self,k,imp):
         self.operators[k]=imp
@@ -146,11 +173,16 @@ class ExpManager():
     def __new(self,k,operands):
         return self.operators[k](operands)
 
-    def addFunction(self,key,imp):
-        self.functions[key]=imp 
+    def addFunction(self,key,imp,types=['any']):
+        if key not in self.functions.keys():
+            self.functions[key]= []
+        self.functions[key].append({'types':types,'imp':imp})         
 
-    def getFunction(self,key):
-        return self.functions[key]
+    def getFunction(self,key,type='any'):
+        for p in self.functions[key]:
+            if type in p['types']:
+                return p['imp']
+        return None
   
     def setContext(self,expression,context):
         if type(expression).__name__ ==  'Variable':
@@ -212,16 +244,16 @@ class ExpManager():
         if char.isalnum():    
             value,i= self.__getValue(chars,i,length)
             if i<length and chars[i] == '(':
-                args,i= self.__getArgs(chars,i+1,length)
+                args,i= self.__getArgs(chars,i+1,length,end=')')
                 if '.' in value:
-                    names = value.split()
+                    names = value.split('.')
                     key = names.pop()
-                    variable = Variable(names)
+                    variableName= '.'.join(names)
+                    variable = Variable(variableName)
                     args.insert(0,variable)
-                    Function(self,key,args,True)
+                    operand= Function(self,key,args,True)
                 else:
-                    key=value
-                operand= Function(self,key,args)       
+                    operand= Function(self,value,args)       
 
             elif i<length and chars[i] == '[':    
                 idx, i= self.__getExpression(chars,i+1,length,_break=']')
@@ -240,7 +272,7 @@ class ExpManager():
                     isNegative= False 
                 else:
                     value =float(value)
-                operand = Constant(value,'decimal')
+                operand = Constant(value,'float')
             else:
                 operand = Variable(value)
         elif char == '\'' or char == '"':
@@ -250,7 +282,9 @@ class ExpManager():
             operand,i= self.__getExpression(chars,i+1,length,_break=')') 
         elif char == '{':
             operand,i = self.__getObject(chars,i+1,length)  
-
+        elif char == '[':
+            elements,i= self.__getArgs(chars,i+1,length,end=']')
+            operand = Array(elements)
 
         if i<length and  chars[i]=='.':
             function,i=self.__getOperand(chars,i+1,length)
@@ -263,16 +297,17 @@ class ExpManager():
         return operand,i
 
     def __priority(self,op):
-        if op in ['='] : return 1
-        if op in self.comparisonOperators : return 2
-        if op in ['+','-'] : return 3
-        if op in ['*','/'] : return 4
-        if op in ['**','//'] : return 5
+        if op in ['='] : return 1        
+        if op in self.logicalOperators : return 2
+        if op in self.comparisonOperators : return 3
+        if op in ['+','-'] : return 4
+        if op in ['*','/'] : return 5
+        if op in ['**','//'] : return 6
         return -1
 
     def __getValue(self,chars,i,length):
         buff=[]
-        while i < length and chars[i].isalnum():
+        while i < length and self.reAlphanumeric.match(chars[i]):
             buff.append(chars[i])
             i+=1
         return ''.join(buff),i
@@ -283,7 +318,10 @@ class ExpManager():
         if chars[i] in self.arithmeticOperators:
             if chars[i]+chars[i+1] in self.arithmeticOperators:
                 return chars[i]+chars[i+1], i+2
-        elif chars[i] in self.comparisonOperators or chars[i] in ['=','!']:
+        if chars[i] in self.logicalOperators or chars[i] in ['&','|','!']:
+            if chars[i]+chars[i+1] in self.logicalOperators:
+                return chars[i]+chars[i+1], i+2        
+        if chars[i] in self.comparisonOperators or chars[i] in ['=','!']:
             if chars[i]+chars[i+1] in self.comparisonOperators:
                 return chars[i]+chars[i+1], i+2
         return chars[i],i+1
@@ -298,16 +336,26 @@ class ExpManager():
             i+=1
         return ''.join(buff),i+1
 
-    def __getArgs(self,chars,i,length):
+    def __getArgs(self,chars,i,length,end=')'):
         args= []
         while True:
-            arg,i=self.__getExpression(chars,i,length,_break=',)')
+            arg,i=self.__getExpression(chars,i,length,_break=','+end)
             if arg != None:args.append(arg)
-            if chars[i-1]==')': break
+            if chars[i-1]==end: break
         return args, i
 
     def __getObject(self,chars,i,length):
-        pass 
+        attributes= []
+        while True:
+            name,i=self.__getValue(chars,i,length)
+            if chars[i]!=':':
+                raise ExpressionError('attribute '+name+' without value')
+            value,i=self.__getExpression(chars,i,length,_break=',}')
+            attribute = KeyValue(name,value)
+            attributes.append(attribute)
+            if chars[i-1]=='}': break
+        
+        return Object(attributes),i 
 
 def addElements():
 
@@ -416,42 +464,42 @@ def addElements():
 
     exp.addFunction('nvl',lambda a,b: a if a!=None else b )
 
-
-    exp.addFunction('str_capitalize',lambda str: str.capitalize())
-    exp.addFunction('str_count',lambda str,sub,start=None,end=None: str.count(sub,start,end))
-    exp.addFunction('str_decode',lambda str,encoding: str.decode(encoding))
-    exp.addFunction('str_encode',lambda str,encoding: str.encode(encoding))
-    exp.addFunction('str_endswith',lambda str,suffix,start=None,end=None: str.endswith(suffix,start,end))
-    exp.addFunction('str_find',lambda str,sub,start=None,end=None: str.find(sub,start,end))
-    exp.addFunction('str_index',lambda str,sub,start=None,end=None: str.index(sub,start,end))
-    exp.addFunction('str_isalnum',lambda str: str.isalnum())
-    exp.addFunction('str_isalpha',lambda str: str.isalpha())
-    exp.addFunction('str_isdigit',lambda str: str.isdigit())
-    exp.addFunction('str_islower',lambda str: str.islower())
-    exp.addFunction('str_isspace',lambda str: str.isspace())
-    exp.addFunction('str_istitle',lambda str: str.istitle())
-    exp.addFunction('str_isupper',lambda str: str.isupper())
-    exp.addFunction('str_join',lambda str,seq: str.join(seq))
-    exp.addFunction('str_ljust',lambda str,width,fillchar=None: str.ljust(width,fillchar))
-    exp.addFunction('str_lower',lambda str: str.lower())
-    exp.addFunction('str_lstrip',lambda str,chars: str.lstrip(chars))
-    exp.addFunction('str_partition',lambda str,sep: str.partition(sep))
-    exp.addFunction('str_replace',lambda str,old,new,count=None: str.replace(old,new,count))
-    exp.addFunction('str_rfind',lambda str,sub,start=None,end=None: str.rfind(sub,start,end))
-    exp.addFunction('str_rindex',lambda str,sub,start=None,end=None: str.rindex(sub,start,end))
-    exp.addFunction('str_rjust',lambda str,width,fillchar=None: str.rjust(width,fillchar))
-    exp.addFunction('str_rpartition',lambda str,sep: str.rpartition(sep))
-    exp.addFunction('str_rsplit',lambda str,sep,maxsplit=None: str.rsplit(sep,maxsplit))
-    exp.addFunction('str_rstrip',lambda str,chars: str.lstrip(chars))
-    exp.addFunction('str_split',lambda str,sep,maxsplit=None: str.split(sep,maxsplit))
-    exp.addFunction('str_splitlines',lambda str,keepends=None: str.splitlines(keepends))
-    exp.addFunction('str_startswith',lambda str,prefix,start=None,end=None: str.startswith(prefix,start,end))
-    exp.addFunction('str_strip',lambda str,chars: str.lstrip(chars))
-    exp.addFunction('str_swapcase',lambda str: str.swapcase())
-    exp.addFunction('str_title',lambda str: str.title())
-    exp.addFunction('str_translate',lambda str,table,deletechars=None: str.translate(table,deletechars))
-    exp.addFunction('str_upper',lambda str: str.upper())
-    exp.addFunction('str_zfill',lambda str,width: str.zfill(width))
+    # https://docs.python.org/2.5/lib/string-methods.html
+    exp.addFunction('capitalize',lambda str: str.capitalize(),['str'])
+    exp.addFunction('count',lambda str,sub,start=None,end=None: str.count(sub,start,end),['str'])
+    exp.addFunction('decode',lambda str,encoding: str.decode(encoding),['str'])
+    exp.addFunction('encode',lambda str,encoding: str.encode(encoding),['str'])
+    exp.addFunction('endswith',lambda str,suffix,start=None,end=None: str.endswith(suffix,start,end),['str'])
+    exp.addFunction('find',lambda str,sub,start=None,end=None: str.find(sub,start,end),['str'])
+    exp.addFunction('index',lambda str,sub,start=None,end=None: str.index(sub,start,end),['str'])
+    exp.addFunction('isalnum',lambda str: str.isalnum(),['str'])
+    exp.addFunction('isalpha',lambda str: str.isalpha(),['str'])
+    exp.addFunction('isdigit',lambda str: str.isdigit(),['str'])
+    exp.addFunction('islower',lambda str: str.islower(),['str'])
+    exp.addFunction('isspace',lambda str: str.isspace(),['str'])
+    exp.addFunction('istitle',lambda str: str.istitle(),['str'])
+    exp.addFunction('isupper',lambda str: str.isupper(),['str'])
+    exp.addFunction('join',lambda str,seq: str.join(seq),['str'])
+    exp.addFunction('ljust',lambda str,width,fillchar=None: str.ljust(width,fillchar),['str'])
+    exp.addFunction('lower',lambda str: str.lower(),['str'])
+    exp.addFunction('lstrip',lambda str,chars: str.lstrip(chars),['str'])
+    exp.addFunction('partition',lambda str,sep: str.partition(sep))
+    exp.addFunction('replace',lambda str,old,new,count=None: str.replace(old,new,count),['str'])
+    exp.addFunction('rfind',lambda str,sub,start=None,end=None: str.rfind(sub,start,end),['str'])
+    exp.addFunction('rindex',lambda str,sub,start=None,end=None: str.rindex(sub,start,end),['str'])
+    exp.addFunction('rjust',lambda str,width,fillchar=None: str.rjust(width,fillchar),['str'])
+    exp.addFunction('rpartition',lambda str,sep: str.rpartition(sep),['str'])
+    exp.addFunction('rsplit',lambda str,sep,maxsplit=None: str.rsplit(sep,maxsplit),['str'])
+    exp.addFunction('rstrip',lambda str,chars: str.lstrip(chars),['str'])
+    exp.addFunction('split',lambda str,sep,maxsplit=None: str.split(sep,maxsplit),['str'])
+    exp.addFunction('splitlines',lambda str,keepends=None: str.splitlines(keepends),['str'])
+    exp.addFunction('startswith',lambda str,prefix,start=None,end=None: str.startswith(prefix,start,end),['str'])
+    exp.addFunction('strip',lambda str,chars: str.lstrip(chars),['str'])
+    exp.addFunction('swapcase',lambda str: str.swapcase(),['str'])
+    exp.addFunction('title',lambda str: str.title(),['str'])
+    exp.addFunction('translate',lambda str,table,deletechars=None: str.translate(table,deletechars),['str'])
+    exp.addFunction('upper',lambda str: str.upper(),['str'])
+    exp.addFunction('zfill',lambda str,width: str.zfill(width),['str'])
 
 
 
@@ -469,7 +517,7 @@ def addElements():
 exp = ExpManager()
 addElements()
 
-result=exp.solve('a.count("a")',{"a":"aaa"})
+result=exp.solve('a.upper()',{"a":"aaa"})
 # result=exp.solve('a.count()',{"a":[1,2,3]})
 print(result)
 # print (1+(2**3)*4) 
