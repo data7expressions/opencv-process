@@ -224,11 +224,15 @@ class ExpParser():
         return self.chars[self.index]    
     @property
     def next(self):
-        return self.chars[self.index+1]     
+        return self.chars[self.index+1]
+    @property
+    def end(self):
+        return self.index >= self.length
+              
 
 
     def getExpression(self,a=None,op1=None,_break=''):              
-        while self.index < self.length:
+        while not self.end:
             if a==None and op1==None: 
                 a=  self.getOperand()
                 op1= self.getOperator()
@@ -264,7 +268,7 @@ class ExpParser():
 
         if char.isalnum():    
             value=  self.getValue()
-            if self.index<self.length and self.current == '(':
+            if not self.end and self.current == '(':
                 self.index+=1
                 args=  self.getArgs(end=')')
                 if '.' in value:
@@ -277,7 +281,7 @@ class ExpParser():
                 else:
                     operand= Function(self.mgr,value,args)       
 
-            elif self.index<self.length and self.current == '[':
+            elif not self.end and self.current == '[':
                 self.index+=1    
                 idx, i= self.getExpression(_break=']')
                 operand= Variable(value)
@@ -313,7 +317,7 @@ class ExpParser():
             elements=  self.getArgs(end=']')
             operand = Array(elements)
 
-        if self.index<self.length and  self.current=='.':
+        if not self.end and  self.current=='.':
             self.index+=1
             function= self.getOperand()
             function.operands.insert(0,operand)
@@ -335,13 +339,13 @@ class ExpParser():
 
     def getValue(self):
         buff=[]
-        while self.index < self.length and self.reAlphanumeric.match(self.current):
+        while not self.end and self.reAlphanumeric.match(self.current):
             buff.append(self.current)
             self.index+=1
         return ''.join(buff)
 
     def getOperator(self):
-        if self.index == self.length:
+        if self.end:
             return None 
 
         simple = self.current
@@ -364,7 +368,7 @@ class ExpParser():
 
     def getString(self,char):
         buff=[]       
-        while self.index < self.length :
+        while not self.end :
             if self.current == char:
                 if not((self.index+1 < self.length and self.next == char) or (self.previous == char)):
                     break 
