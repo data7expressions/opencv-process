@@ -213,18 +213,29 @@ class ExpParser():
        self.logicalOperators = ['&&','||']
 
     def parse(self): 
-        operand=  self.__getExpression(self.chars)
-        return operand   
+        operand=  self.__getExpression()
+        return operand
 
-    def __getExpression(self,chars,a=None,op1=None,_break=''):              
+    @property
+    def previous(self):
+        return self.chars[self.index-1] 
+    @property
+    def current(self):
+        return self.chars[self.index]    
+    @property
+    def next(self):
+        return self.chars[self.index+1]     
+
+
+    def __getExpression(self,a=None,op1=None,_break=''):              
         while self.index < self.length:
             if a==None and op1==None: 
-                a=  self.__getOperand(chars)
-                op1= self.__getOperator(chars)
+                a=  self.__getOperand()
+                op1= self.__getOperator()
                 if op1==None or op1 in _break: return a
 
-            b=  self.__getOperand(chars)
-            op2= self.__getOperator(chars)
+            b=  self.__getOperand()
+            op2= self.__getOperator()
 
             if op2 == None or op2 in _break:
                 return self.mgr.new(op1,[a,b])
@@ -232,30 +243,30 @@ class ExpParser():
                 a=self.mgr.new(op1,[a,b])
                 op1=op2
             else:
-                b = self.__getExpression(chars,a=b,op1=op2,_break=_break)
+                b = self.__getExpression(a=b,op1=op2,_break=_break)
                 return self.mgr.new(op1,[a,b])
 
         return self.mgr.new(op1,[a,b])         
 
-    def __getOperand(self,chars):        
+    def __getOperand(self):        
         isNegative=False
         isNot=False
         operand=None
-        char = chars[self.index]
+        char = self.current
         if char == '-':
            isNegative=True
            self.index+=1
-           char = chars[self.index]
+           char = self.current
         elif char == '!':
            isNot=True
            self.index+=1
-           char = chars[self.index]   
+           char = self.current   
 
         if char.isalnum():    
-            value=  self.__getValue(chars)
-            if self.index<self.length and chars[self.index] == '(':
+            value=  self.__getValue()
+            if self.index<self.length and self.current == '(':
                 self.index+=1
-                args=  self.__getArgs(chars,end=')')
+                args=  self.__getArgs(end=')')
                 if '.' in value:
                     names = value.split('.')
                     key = names.pop()
@@ -266,9 +277,9 @@ class ExpParser():
                 else:
                     operand= Function(self.mgr,value,args)       
 
-            elif self.index<self.length and chars[self.index] == '[':
+            elif self.index<self.length and self.current == '[':
                 self.index+=1    
-                idx, i= self.__getExpression(chars,_break=']')
+                idx, i= self.__getExpression(_break=']')
                 operand= Variable(value)
                 operand = IndexDecorator(operand,idx)                
             elif self.reInt.match(value): 
@@ -289,22 +300,22 @@ class ExpParser():
                 operand = Variable(value)
         elif char == '\'' or char == '"':
             self.index+=1
-            result=  self.__getString(chars,char)
+            result=  self.__getString(char)
             operand= Constant(result,'string')
         elif char == '(':
             self.index+=1
-            operand=  self.__getExpression(chars,_break=')') 
+            operand=  self.__getExpression(_break=')') 
         elif char == '{':
             self.index+=1
-            operand,i = self.__getObject(chars)  
+            operand,i = self.__getObject()  
         elif char == '[':
             self.index+=1
-            elements=  self.__getArgs(chars,end=']')
+            elements=  self.__getArgs(end=']')
             operand = Array(elements)
 
-        if self.index<self.length and  chars[self.index]=='.':
+        if self.index<self.length and  self.current=='.':
             self.index+=1
-            function= self.__getOperand(chars)
+            function= self.__getOperand()
             function.operands.insert(0,operand)
             function.isChild = True
             operand=function
@@ -322,19 +333,19 @@ class ExpParser():
         if op in ['**','//'] : return 6
         return -1
 
-    def __getValue(self,chars):
+    def __getValue(self):
         buff=[]
-        while self.index < self.length and self.reAlphanumeric.match(chars[self.index]):
-            buff.append(chars[self.index])
+        while self.index < self.length and self.reAlphanumeric.match(self.current):
+            buff.append(self.current)
             self.index+=1
         return ''.join(buff)
 
-    def __getOperator(self,chars):
+    def __getOperator(self):
         if self.index == self.length:
             return None 
 
-        simple = chars[self.index]
-        double = chars[self.index]+chars[self.index+1] if self.index+1 < self.length else None
+        simple = self.current
+        double = self.current+self.next if self.index+1 < self.length else None
         op=None 
 
         if simple in self.arithmeticOperators:
@@ -351,35 +362,35 @@ class ExpParser():
         self.index+=1
         return simple
 
-    def __getString(self,chars,char):
+    def __getString(self,char):
         buff=[]       
         while self.index < self.length :
-            if chars[self.index] == char:
-                if not((self.index+1 < self.length and chars[self.index+1] == char) or (chars[self.index-1] == char)):
+            if self.current == char:
+                if not((self.index+1 < self.length and self.next == char) or (self.previous == char)):
                     break 
-            buff.append(chars[self.index])
+            buff.append(self.current)
             self.index+=1
         self.index+=1    
         return ''.join(buff)
 
-    def __getArgs(self,chars,end=')'):
+    def __getArgs(self,end=')'):
         args= []
         while True:
-            arg= self.__getExpression(chars,_break=','+end)
+            arg= self.__getExpression(_break=','+end)
             if arg != None:args.append(arg)
-            if chars[self.index-1]==end: break
+            if self.previous==end: break
         return args
 
-    def __getObject(self,chars):
+    def __getObject(self):
         attributes= []
         while True:
-            name= self.__getValue(chars)
-            if chars[self.index]!=':':
+            name= self.__getValue()
+            if self.current!=':':
                 raise ExpressionError('attribute '+name+' without value')
-            value= self.__getExpression(chars,_break=',}')
+            value= self.__getExpression(_break=',}')
             attribute = KeyValue(name,value)
             attributes.append(attribute)
-            if chars[self.index-1]=='}': break
+            if self.previous=='}': break
         
         return Object(attributes) 
 
