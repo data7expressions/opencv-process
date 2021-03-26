@@ -59,9 +59,9 @@ def ui(mgr):
 
 def test(mgr):
     mgr.Test.List.execute()
-    mgr.Test.Process.execute()
+    # mgr.Test.Process.execute()
 
 if __name__ == '__main__':
     mgr=init()
-    # test(mgr)
-    ui(mgr)
+    test(mgr)
+    # ui(mgr)

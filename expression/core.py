@@ -290,8 +290,14 @@ class AssigmentRightShift(Operator):
         self._operands[0].value >>= self._operands[1].value
         return self._operands[0].value
 
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
-class Manager():
+class Manager(metaclass=Singleton):
     def __init__(self):
        self.operators={}
        self.enums={} 
@@ -683,17 +689,15 @@ class Parser():
         
         return Object(attributes) 
 
-exp = Manager()
-
-
-context = {"a":"1","b":2,"c":{"a":4,"b":5}}
-# result=exp.solve('a*3==b+1',context)
-# result=exp.getEnum('DayOfWeek')
-result=exp.solve('DayOfWeek',context)
-print(result)
-print(context)
-# print (1+(2**3)*4) 
-# print ((2**3)) 
+manager = Manager()
+# context = {"a":"1","b":2,"c":{"a":4,"b":5}}
+# # result=exp.solve('a*3==b+1',context)
+# # result=exp.getEnum('DayOfWeek')
+# result=exp.solve('DayOfWeek',context)
+# print(result)
+# print(context)
+# # print (1+(2**3)*4) 
+# # print ((2**3)) 
 
 
 

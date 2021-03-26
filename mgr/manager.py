@@ -161,11 +161,17 @@ class TypeManager(Manager):
 #     def value(self,_key):
 #         return self.values[_key]
 
-from expression.core import exp
+from expression.core import Manager as ExpressionManager
 
 class ExpManager(Manager):
     def __init__(self,mgr):
         super(ExpManager,self).__init__(mgr)
+        self._expManager = ExpressionManager()
+
+    def addEnum(self,name,values:dict):
+        self._expManager.addEnum(name,values)
+    def getEnum(self,name):
+        return self._expManager.getEnum(name)    
 
     def solve(self,exp,_type,context):
         if type(exp) is str: 
@@ -204,13 +210,13 @@ class ExpManager(Manager):
             value = self.solve(param['default'],param['type'],context)  
         param['value'] =value         
 
-
 class EnumManager(Manager):
     def __init__(self,mgr):
         super(EnumManager,self).__init__(mgr)
 
     def applyConfig(self,_key,value):
-        self._list[_key]= Enum(value['values']) 
+        self.mgr.Exp.addEnum(_key,value['values'])
+        # self._list[_key]= Enum(value['values']) 
 
 class ConfigManager(Manager):
     def __init__(self,mgr):

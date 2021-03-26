@@ -3,13 +3,14 @@ class ListTest():
     def __init__(self,mgr):
         self.mgr= mgr    
     def execute(self):
-        print(self.mgr.Enum.ColorConversion.values)
+        print(self.mgr.Exp.getEnum('ColorConversion'))
         print(self.mgr.Config.Task['CvtColor']['input'])
+
 class ProcessTest():
     def __init__(self,mgr):
         self.mgr= mgr    
     def execute(self):
-        
+
 
         init = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
                ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'

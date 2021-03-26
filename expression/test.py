@@ -1,7 +1,6 @@
 import unittest
-from expression.core import Manager as ExpManager
+from expression.core import manager as exp
 
-exp = ExpManager()
 
 class TestExpression(unittest.TestCase):
 
