@@ -1,3 +1,12 @@
+
+# https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 # https://www.geeksforgeeks.org/mimicking-events-python/
 class Event(object): 
   
@@ -31,7 +40,6 @@ class Mediator():
     def send(self,sender,verb,resource=None,args={}):
         self._onMessage(sender,verb,resource,args)
 
-
 # https://www.semicolonworld.com/question/43363/how-to-ldquo-perfectly-rdquo-override-a-dict
 class Context(dict):
     def __init__(self, data={}):
@@ -50,7 +58,6 @@ class Context(dict):
         super(Context, self).__setitem__(key, value)
         self._onChange(key,value,oldValue)   
 
-
 class Helper:
     @staticmethod
     def rreplace(s, old, new, occurrence=1):
@@ -63,55 +70,30 @@ class Helper:
             return default
         return value  
 
+class Manager():
+    def __init__(self,mgr):
+        self._list = {}
+        self.mgr=mgr
+        self.type = Helper.rreplace(type(self).__name__, 'Manager', '') 
 
-# class Point(object):
-#     def __init__(self, x, y):
-#         self._x = x
-#         self._y = y
+    def __getattr__(self, _key):
+        if _key in self._list: return self._list[_key]
+        else: return None
+    def __getitem__(self,_key):
+        return self._list[_key]        
+    @property
+    def list(self):
+        return self._list
 
-#     @property
-#     def x(self):
-#         return self._x
-#     @x.setter
-#     def x(self,value):
-#         self._x=value
-#     @property
-#     def y(self):
-#         return self._y
-#     @y.setter
-#     def y(self,value):
-#         self._y=value           
+    def add(self,value):
+        _key = Helper.rreplace(value.__name__,self.type , '')  
+        self._list[_key]= value(self.mgr)
 
-#     def move(self, dx, dy):
-#         self._x = self._x + dx
-#         self._y = self._y + dy
+    def applyConfig(self,_key,value):
+        self._list[_key]= value    
 
-#     def __str__(self):
-#         return "Point(%s,%s)"%(self._x, self._y) 
-
-# class Size(object):
-#     def __init__(self, w, h):
-#         self._w = w
-#         self._h = h
-
-#     @property
-#     def w(self):
-#         return self._w
-#     @w.setter
-#     def w(self,value):
-#         self._w=value
-#     @property
-#     def h(self):
-#         return self._h
-#     @h.setter
-#     def h(self,value):
-#         self._h=value           
-
-#     def move(self, dw, dh):
-#         self._w = self._w + dw
-#         self._h = self._h + dh
-
-#     def __str__(self):
-#         return "Point(%s,%s)"%(self._w, self._y) 
-
-    
+    def key(self,value):
+        if type(value).__name__ != 'type':
+            return  Helper.rreplace(type(value).__name__,self.type , '')
+        else:
+            return  Helper.rreplace(value.__name__,self.type , '')  

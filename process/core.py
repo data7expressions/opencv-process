@@ -1,57 +1,19 @@
+from mgr.base import *
+from expression.core import Manager as ExpressionManager, Operand
+import uuid
+import threading
+
 import yaml
 from os import path
 import glob
 import importlib.util
 import inspect
-import sys
-from enum import Enum
-import tkinter as tk
-from os import path,listdir
-from .base import *
 
-# https://www.pythonprogramming.in/attribute-assignment-using-getattr-and-setattr-in-python.html
-# aplicar __getattr__ and __setattr__ para los managers
-
-    
-
-class MainManager(Manager):
-    def __init__(self,context={}):
-        self._context=Context(context)
+# TODO mover a mgr base
+class MainManager(Manager,metaclass=Singleton):
+    def __init__(self):
         super(MainManager,self).__init__(self)
-        self.iconProvider=None
-
-    @property
-    def context(self):
-        return self._context
-    @context.setter
-    def context(self,value):
-        self._context=value       
-
-    def init(self,plugins=[]):
-        
-        self.add(TypeManager)
-        self.add(EnumManager)
-        self.add(ConfigManager)        
-        self.add(TaskManager) 
-        self.add(ExpManager) 
-        self.add(ProcessManager) 
-        self.add(TestManager)
-        self.add(HelperManager)
-        self.add(UiManager) 
-        
-        dir_path = path.dirname(path.realpath(__file__))
-        self.loadPlugin(path.join(dir_path,'main'))
-
-        for p in plugins:
-            self.loadPlugin(p)
-
-    def addIconProvider(self,provider):
-        self.iconProvider=provider
-
-    def getIcon(self,_key):
-        if self.iconProvider is None: return None
-        return self.iconProvider.getIcon(_key) 
-
+    
     def __getattr__(self, _key):
         if _key=='Manager': return self      
         if _key in self._list: return self._list[_key]
@@ -111,7 +73,6 @@ class MainManager(Manager):
                 if inspect.isclass(element):
                     self[_key].add(element) 
 
-
 class TypeManager(Manager):
     def __init__(self,mgr):
         super(TypeManager,self).__init__(mgr)
@@ -127,15 +88,9 @@ class TypeManager(Manager):
             from_ = 0 
         return from_,to          
 
-# class Enum():
-#     def __init__(self,values):
-#         self.values =values
-#     def values(self):
-#         return self.values    
-#     def value(self,_key):
-#         return self.values[_key]
-
-from expression.core import Manager as ExpressionManager
+class TaskManager(Manager):
+    def __init__(self,mgr):
+        super(TaskManager,self).__init__(mgr)
 
 class ExpManager(Manager):
     def __init__(self,mgr):
@@ -146,31 +101,13 @@ class ExpManager(Manager):
         self._expManager.addEnum(name,values)
     def getEnum(self,name):
         return self._expManager.getEnum(name)    
-
-    def solve(self,exp,_type,context):
-        if type(exp) is str: 
-            if exp.startswith('$'):
-                variable=exp.replace('$','')
-                return context[variable]
-            elif exp.startswith('enum.'):
-                arr=exp.replace('enum.','').split('.')
-                return self.mgr.Enum[arr[0]].value(arr[1])
-        elif type(exp) is dict:
-            return exp        
-
+      
+    def solve(self,expression:Operand,context:Context,_type:str=None):
+        result=self._expManager.eval(expression,context)
         if _type == 'filepath' or _type == 'folderpath' :
-            if not path.isabs(exp): 
-                exp = path.join(context['__workspace'], exp)        
-        return exp
-
-    def var(self,exp):
-        if type(exp) is str: 
-            if exp.startswith('$'):
-                return exp.replace('$','')
-        return None
-
-    def eval(self,exp,context):
-        return True
+            if not path.isabs(result): 
+                result = path.join(context['__workspace'], result)        
+        return result
 
     def solveParams(self,params,context):  
         for param in params:
@@ -179,46 +116,20 @@ class ExpManager(Manager):
     def solveParam(self,param,context):
         value=None
         if 'exp' in param:
-            value = self.solve(param['exp'],param['type'],context)
+            value = self.solve(param['exp'],context,param['type'])
         elif 'default' in param:
-            value = self.solve(param['default'],param['type'],context)  
+            value = self.solve(param['default'],context,param['type'])  
         param['value'] =value         
 
-class EnumManager(Manager):
-    def __init__(self,mgr):
-        super(EnumManager,self).__init__(mgr)
+# class EnumManager(Manager):
+#     def __init__(self,mgr):
+#         super(EnumManager,self).__init__(mgr)
 
-    def applyConfig(self,_key,value):
-        self.mgr.Exp.addEnum(_key,value['values'])
-        # self._list[_key]= Enum(value['values']) 
+#     def applyConfig(self,_key,value):
+#         self.mgr.Exp.addEnum(_key,value['values'])
+#         # self._list[_key]= Enum(value['values']) 
 
-class ConfigManager(Manager):
-    def __init__(self,mgr):
-        super(ConfigManager,self).__init__(mgr)
 
-    def applyConfig(self,_key,value):
-        if _key in self._list:
-            config = self._list[_key]
-            for p in value:
-                config[p]=value[p]
-        else:
-            self._list[_key]= value    
-
-class TaskManager(Manager):
-    def __init__(self,mgr):
-        super(TaskManager,self).__init__(mgr)
-
-class TestManager(Manager):
-    def __init__(self,mgr):
-        super(TestManager,self).__init__(mgr)     
-
-class HelperManager(Manager):
-    def __init__(self,mgr):
-        super(HelperManager,self).__init__(mgr)  
-
-    def add(self,value):
-        _key = Helper.rreplace(value.__name__,self.type , '')  
-        self._list[_key]= value       
 
 class Process:
     def __init__(self,parent,spec,context,mgr):
@@ -325,9 +236,7 @@ class Process:
                     self.execute(p['target']) 
             else:
                 self.execute(p['target'])  
-    
-import uuid
-import threading
+   
 
 class ProcessManager(Manager):
     def __init__(self,mgr):
@@ -390,7 +299,7 @@ class ProcessManager(Manager):
                 node=spec['nodes'][_key]
                 if 'input' in node:
                     for p in node['input']:
-                        varName =self.mgr.Exp.var(p['exp'])
+                        varName =p['exp']
                         if varName != None:
                             var={'type':p['type'],'bind':(True if varName in spec['bind'] else False )}
                             if 'default' in p : var['default'] = p['default']
@@ -440,31 +349,14 @@ class ProcessManager(Manager):
     def completeSpecTransition(self,node):        
         if 'transition' not in node:
             node['transition']=[] 
-    
-class UiManager(Manager):
-    def __init__(self,mgr):
-        super(UiManager,self).__init__(mgr)
 
-    def add(self,value):
-        _key = Helper.rreplace(value.__name__,self.type , '')  
-        self._list[_key]= value 
 
-    def singleton(self,_key,**args):
-        value=self._list[_key]
-        if type(value).__name__ != 'type':
-            return value
 
-        args['mgr']=self.mgr
-        instance=value(**args)
-        self._list[_key]= instance
-        return instance
+mainManager = MainManager()
+mainManager.add(ExpManager)
+mainManager.add(TypeManager)      
+mainManager.add(TaskManager) 
+mainManager.add(ProcessManager) 
 
-    def new(self,_key,**args):
-        value=self._list[_key]
-        _class=None
-        if type(value).__name__ == 'type':
-            _class=value
-        else:
-            _class=type(value)
-        args['mgr']=self.mgr
-        return _class(**args) 
+dir_path = path.dirname(path.realpath(__file__))
+mainManager.loadPlugin(path.join(dir_path,'main'))

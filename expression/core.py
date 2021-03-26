@@ -1,5 +1,5 @@
 import re
-from typing import Iterable
+from mgr.base import *
 
 class ExpressionError(Exception):
     pass
@@ -52,11 +52,11 @@ class Variable(Operand):
                 _value=_value[n]
             i+=1    
 class Operator(Operand):
-    def __init__(self,operands:Iterable ):
+    def __init__(self,operands ):
       self._operands  = operands
 
     @property
-    def operands(self)-> Iterable:
+    def operands(self):
         return self._operands
 
     @property
@@ -290,13 +290,6 @@ class AssigmentRightShift(Operator):
         self._operands[0].value >>= self._operands[1].value
         return self._operands[0].value
 
-class Singleton(type):
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
 class Manager(metaclass=Singleton):
     def __init__(self):
        self.operators={}
@@ -305,7 +298,6 @@ class Manager(metaclass=Singleton):
        self.initOperators()
        self.initFunctions()
        self.initEnums()
-
     def initOperators(self):        
         self.add('+',Addition)
         self.add('-',Subtraction)
@@ -346,7 +338,6 @@ class Manager(metaclass=Singleton):
         self.add('^=',AssigmentBitXor)
         self.add('<<=',AssigmentLeftShift)
         self.add('>>=',AssigmentRightShift)
-
     def initFunctions(self): 
         self.addFunction('nvl',lambda a,b: a if a!=None else b )
         # https://docs.python.org/2.5/lib/string-methods.html
@@ -385,37 +376,28 @@ class Manager(metaclass=Singleton):
         self.addFunction('translate',lambda str,table,deletechars=None: str.translate(table,deletechars),['str'])
         self.addFunction('upper',lambda str: str.upper(),['str'])
         self.addFunction('zfill',lambda str,width: str.zfill(width),['str'])   
-   
     def initEnums(self): 
         self.addEnum('DayOfWeek',{"Monday":1,"Tuesday":2,"Wednesday":3,"Thursday":4,"Friday":5,"Saturday":6,"Sunday":0})
-
     def add(self,k,imp):
         self.operators[k]=imp
-      
     def new(self,k,operands):
         try:
             return self.operators[k](operands)
         except:
             raise ExpressionError('error with operator: '+str(k))    
-
     def addEnum(self,key,imp:dict):
         self.enums[key] =imp 
-
     def isEnum(self,name):    
         names = name.split('.')
         return names[0] in self.enums.keys()
-
     def getEnumValue(self,name,option): 
         return self.enums[name][option]
-
     def getEnum(self,name): 
         return self.enums[name]
-
     def addFunction(self,key,imp,types=['any']):
         if key not in self.functions.keys():
             self.functions[key]= []
         self.functions[key].append({'types':types,'imp':imp})         
-
     def getFunction(self,key,type='any'):
         for p in self.functions[key]:
             if type in p['types']:
@@ -434,9 +416,12 @@ class Manager(metaclass=Singleton):
 
     def solve(self,string:str,context:dict=None):        
         expression=self.parse(string)
+        return self.eval(expression,context)
+
+    def eval(self,expression:Operand,context:dict=None):
         if context != None:
             self.setContext(expression,context)
-        return expression.value
+        return expression.value   
 
     def parse(self,string):
         try:
@@ -688,17 +673,3 @@ class Parser():
             if self.previous=='}': break
         
         return Object(attributes) 
-
-manager = Manager()
-# context = {"a":"1","b":2,"c":{"a":4,"b":5}}
-# # result=exp.solve('a*3==b+1',context)
-# # result=exp.getEnum('DayOfWeek')
-# result=exp.solve('DayOfWeek',context)
-# print(result)
-# print(context)
-# # print (1+(2**3)*4) 
-# # print ((2**3)) 
-
-
-
-
