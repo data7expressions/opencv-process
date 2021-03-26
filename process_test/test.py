@@ -1,9 +1,13 @@
 import unittest
-from expression.core import manager as exp
+from process.core import MainManager
 
+
+mainManager = MainManager()
 
 class TestProcess(unittest.TestCase):
-    pass        
+    pass  
+
+
 
 def test():
     unittest.main()

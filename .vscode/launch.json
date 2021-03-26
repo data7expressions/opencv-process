@@ -26,6 +26,20 @@
             "module": "expression_test"
         },
         {
+            "name": "Python: Process",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "process"
+        },
+        {
+            "name": "Python: Test Process",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "process_test"
+        },
+        {
             "name": "Python: App",
             "type": "python",
             "request": "launch",

@@ -16,6 +16,12 @@ class Constant(Operand):
     @property
     def value(self): 
         return self._value 
+
+    def __str__(self):
+        return str(self._value)
+    def __repr__(self):
+        return str(self._value)    
+
 class Variable(Operand):
     def __init__(self,name ):
       self._name  = name
@@ -50,7 +56,14 @@ class Variable(Operand):
                 _value[n]=value
             else:                    
                 _value=_value[n]
-            i+=1    
+            i+=1
+
+    def __str__(self):
+        return self._name
+    def __repr__(self):
+        return self._name      
+
+
 class Operator(Operand):
     def __init__(self,operands ):
       self._operands  = operands
@@ -448,7 +461,8 @@ class Parser():
         isString=False
         quotes=None
         result =[]
-        for p in list(string):
+        chars = list(string)
+        for p in chars:
             if isString and p == quotes: isString=False 
             elif not isString and (p == '\'' or p=='"'):
                 isString=True
