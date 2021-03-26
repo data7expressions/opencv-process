@@ -1,6 +1,5 @@
 import re
 from typing import Iterable
-# from typing import ChainMap
 
 class ExpressionError(Exception):
     pass
@@ -20,7 +19,7 @@ class Constant(Operand):
 class Variable(Operand):
     def __init__(self,name ):
       self._name  = name
-      self._names = name.split()
+      self._names = name.split('.')
       self._context  = None
 
     @property
@@ -44,9 +43,14 @@ class Variable(Operand):
     @value.setter
     def value(self,value):
         _value = self._context
+        length = len(self._names)
+        i=1
         for n in self._names:
-            _value=_value[n]
-        _value=value       
+            if i == length:
+                _value[n]=value
+            else:                    
+                _value=_value[n]
+            i+=1    
 class Operator(Operand):
     def __init__(self,operands:Iterable ):
       self._operands  = operands
@@ -209,8 +213,6 @@ class ExpManager():
         except:
             raise ExpressionError('error in expression: '+string)  
 
-         
-
 class ExpParser():
     def __init__(self,mgr,string):
        self.mgr = mgr 
@@ -220,9 +222,7 @@ class ExpParser():
        self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
        self.reInt = re.compile('[0-9]+$')
        self.reFloat = re.compile('(\d+(\.\d*)?|\.\d+)([eE]\d+)?')
-       self.arithmeticOperators = ['+','-','*','/','%','**','//']
-       self.comparisonOperators = ['>','<','>=','<=','!=','==']
-       self.logicalOperators = ['&&','||']
+  
 
     @staticmethod
     def getChars(string):
@@ -385,9 +385,9 @@ class ExpParser():
         return operand
 
     def priority(self,op):
-        if op in ['='] : return 1        
-        if op in self.logicalOperators : return 2
-        if op in self.comparisonOperators : return 3
+        if op in ['=','+=','-=','*=','/=','%=','**=','//=','&=','|=','^=','<<=','>>='] : return 1        
+        if op in ['&&','||'] : return 2
+        if op in ['>','<','>=','<=','!=','==']: return 3
         if op in ['+','-'] : return 4
         if op in ['*','/'] : return 5
         if op in ['**','//'] : return 6
@@ -401,26 +401,17 @@ class ExpParser():
         return ''.join(buff)
 
     def getOperator(self):
-        if self.end:
-            return None 
-
-        simple = self.current
-        double = self.current+self.next if self.index+1 < self.length else None
-        op=None 
-
-        if simple in self.arithmeticOperators:
-            if double in self.arithmeticOperators:op=double
-        if op==None and (simple in self.logicalOperators or simple in ['&','|','!']):
-            if double in self.logicalOperators: op=double
-        if op==None and (simple in self.comparisonOperators or simple in ['=','!']):
-            if double in self.comparisonOperators:op=double
-
-        if op!= None:
-           self.index+=2
-           return op
-
-        self.index+=1
-        return simple
+        if self.end:return None 
+        op=None
+        if self.index+2 < self.length:
+            triple = self.current+self.next+self.chars[self.index+2]
+            if triple in ['**=','//=','<<=','>>=']:op=triple
+        if op == None and  self.index+1 < self.length:
+            double = self.current+self.next
+            if double in ['**','//','>=','<=','!=','==','+=','-=','*=','/=','%=','&&','||','|=','^=','<<','>>']  :op=double
+        if op == None:op=self.current 
+        self.index+=len(op)
+        return op
 
     def getString(self,char):
         buff=[]       
@@ -478,6 +469,26 @@ def addElements():
         def solve(self,a,b):
             return a%b 
 
+    class BitAnd(Operator):
+        def solve(self,a,b):
+            return a & b 
+    class BitOr(Operator):
+        def solve(self,a,b):
+            return a | b
+    class BitXor(Operator):
+        def solve(self,a,b):
+            return a ^ b                  
+    class BitNot(Operator):
+        @property
+        def value(self):
+            return ~ self._operands[0].value
+    class LeftShift(Operator):
+        def solve(self,a,b):
+            return a << b   
+    class RightShift(Operator):
+        def solve(self,a,b):
+            return a >> b   
+
     class Equal(Operator):
         def solve(self,a,b):
             return a==b
@@ -508,25 +519,71 @@ def addElements():
         def value(self):
             return not self._operands[0].value
 
-    class BitAnd(Operator):
-        def solve(self,a,b):
-            return a & b 
-    class BitOr(Operator):
-        def solve(self,a,b):
-            return a | b
-    class BitXor(Operator):
-        def solve(self,a,b):
-            return a ^ b                  
-    class BitNot(Operator):
+    class Assigment(Operator):
         @property
         def value(self):
-            return ~ self._operands[0].value
-    class LeftShift(Operator):
-        def solve(self,a,b):
-            return a << b   
-    class RightShift(Operator):
-        def solve(self,a,b):
-            return a >> b   
+            self._operands[0].value = self._operands[1].value
+            return self._operands[0].value
+    class AssigmentAddition(Operator):
+        @property
+        def value(self):
+            self._operands[0].value += self._operands[1].value
+            return self._operands[0].value
+    class AssigmentSubtraction (Operator):
+        @property
+        def value(self):
+            self._operands[0].value -= self._operands[1].value
+            return self._operands[0].value  
+    class AssigmentMultiplication(Operator):
+        @property
+        def value(self):
+            self._operands[0].value *= self._operands[1].value
+            return self._operands[0].value 
+    class AssigmentDivision (Operator):
+        @property
+        def value(self):
+            self._operands[0].value /= self._operands[1].value
+            return self._operands[0].value  
+    class AssigmentExponentiation(Operator):
+        @property
+        def value(self):
+            self._operands[0].value **= self._operands[1].value
+            return self._operands[0].value 
+    class AssigmentFloorDivision (Operator):
+        @property
+        def value(self):
+            self._operands[0].value //= self._operands[1].value
+            return self._operands[0].value   
+    class AssigmentMod (Operator):
+        @property
+        def value(self):
+            self._operands[0].value %= self._operands[1].value
+            return self._operands[0].value 
+    class AssigmentBitAnd(Operator):
+        @property
+        def value(self):
+            self._operands[0].value &= self._operands[1].value
+            return self._operands[0].value 
+    class AssigmentBitOr(Operator):
+        @property
+        def value(self):
+            self._operands[0].value |= self._operands[1].value
+            return self._operands[0].value
+    class AssigmentBitXor(Operator):
+        @property
+        def value(self):
+            self._operands[0].value ^= self._operands[1].value
+            return self._operands[0].value
+    class AssigmentLeftShift(Operator):
+        @property
+        def value(self):
+            self._operands[0].value <<= self._operands[1].value
+            return self._operands[0].value
+    class AssigmentRightShift(Operator):
+        @property
+        def value(self):
+            self._operands[0].value >>= self._operands[1].value
+            return self._operands[0].value
 
     exp.add('+',Addition)
     exp.add('-',Subtraction)
@@ -535,6 +592,13 @@ def addElements():
     exp.add('**',Exponentiation)
     exp.add('//',FloorDivision)
     exp.add('%',Mod)
+
+    exp.add('&',BitAnd)
+    exp.add('|',BitOr)
+    exp.add('^',BitXor)
+    exp.add('~',BitNot)
+    exp.add('<<',LeftShift)
+    exp.add('>>',RightShift)
 
     exp.add('==',Equal)
     exp.add('!=',NotEqual)
@@ -547,12 +611,21 @@ def addElements():
     exp.add('||',Or)
     exp.add('!',Not)
 
-    exp.add('&',BitAnd)
-    exp.add('|',BitOr)
-    exp.add('^!',BitXor)
-    exp.add('~',BitNot)
-    exp.add('<<',LeftShift)
-    exp.add('>>',RightShift)
+    exp.add('=',Assigment)
+    exp.add('+=',AssigmentAddition)
+    exp.add('-=',AssigmentSubtraction)
+    exp.add('*=',AssigmentMultiplication)
+    exp.add('/=',AssigmentDivision)
+    exp.add('**=',AssigmentExponentiation)
+    exp.add('//=',AssigmentFloorDivision)
+    exp.add('%=',AssigmentMod)
+    exp.add('&=',AssigmentBitAnd)
+    exp.add('|=',AssigmentBitOr)
+    exp.add('^=',AssigmentBitXor)
+    exp.add('<<=',AssigmentLeftShift)
+    exp.add('>>=',AssigmentRightShift)
+    
+  
 
 
     exp.addEnum('ColorConversion',{"BGR2GRAY":6
@@ -620,8 +693,14 @@ exp = ExpManager()
 addElements()
 
 # result=exp.solve('ColorConversion.GRAY2BGR',{"a":"aaa"})
-result=exp.solve('a.capitalize()',{"a":"aaa","b":2})
+context = {"a":"1","b":2,"c":{"a":4,"b":5}}
+# result=exp.solve('c.b',context)
+# result=exp.solve('a=1',context)
+# result=exp.solve('c.a=1',context)
+result=exp.solve('a*3==b+1',context)
+
 print(result)
+print(context)
 # print (1+(2**3)*4) 
 # print ((2**3)) 
 

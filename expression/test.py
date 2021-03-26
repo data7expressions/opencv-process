@@ -38,12 +38,20 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('-a*b',{"a":1,"b":2}),-2)
         self.assertEqual(exp.solve('a*3==b+1',{"a":1,"b":2}),True)
         self.assertEqual(exp.solve('(a*b)+(2*a+2*b)',{"a":1,"b":2}),8)
-        self.assertEqual(exp.solve('2**b+a',{"a":1,"b":2}),5)        
+        self.assertEqual(exp.solve('2**b+a',{"a":1,"b":2}),5) 
+        self.assertEqual(exp.solve('c.b',{"a":"1","b":2,"c":{"a":4,"b":5}}),5)
 
     def test_strings(self):
         self.assertEqual(exp.solve('"a"'),"a") 
         self.assertEqual(exp.solve('"a"<"b"'),"a"<"b") 
         self.assertEqual(exp.solve('"a ""b"" "<"b"'),"a ""b"" "<"b") 
+
+    def test_assigments(self):
+        context = {"a":"1","b":2,"c":{"a":4,"b":5}}
+        exp.solve('a=8',context)
+        self.assertEqual(context['a'],8)
+        exp.solve('c.a=1',context)
+        self.assertEqual(context['c']['a'],1)
 
     def test_functions(self):
         self.assertEqual(exp.solve('nvl(a,b)',{"a":None,"b":2}),2) 
@@ -54,8 +62,7 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('a.upper()',{"a":"aaa"}),"AAA") 
 
     def test_enums(self):
-        self.assertEqual(exp.solve('ColorConversion.GRAY2BGR'),8) 
-        
+        self.assertEqual(exp.solve('ColorConversion.GRAY2BGR'),8)
 
         
 
