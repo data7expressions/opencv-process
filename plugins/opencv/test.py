@@ -9,6 +9,7 @@ class ProcessTest():
     def __init__(self,mgr):
         self.mgr= mgr    
     def execute(self):
+        
 
         init = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
                ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'

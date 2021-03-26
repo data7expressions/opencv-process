@@ -1,5 +1,7 @@
 import unittest
-from expression.core import exp
+from expression.core import Manager as ExpManager
+
+exp = ExpManager()
 
 class TestExpression(unittest.TestCase):
 
@@ -62,6 +64,15 @@ class TestExpression(unittest.TestCase):
         self.assertEqual(exp.solve('a.upper()',{"a":"aaa"}),"AAA") 
 
     def test_enums(self):
+        exp.addEnum('ColorConversion',{"BGR2GRAY":6
+                                  ,"BGR2HSV":40
+                                  ,"BGR2RGB":4
+                                  ,"GRAY2BGR":8
+                                  ,"HSV2BGR":54
+                                  ,"HSV2RGB":55
+                                  ,"RGB2GRAY":7
+                                  ,"RGB2HSV":41})
+
         self.assertEqual(exp.solve('ColorConversion.GRAY2BGR'),8)
 
         

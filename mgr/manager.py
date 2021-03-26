@@ -137,6 +137,32 @@ class MainManager(Manager):
                 if inspect.isclass(element):
                     self[_key].add(element) 
 
+
+class TypeManager(Manager):
+    def __init__(self,mgr):
+        super(TypeManager,self).__init__(mgr)
+
+    def range(self,type):
+        from_=None
+        to= None
+        if type['sign'] ==  True:
+            to = (type['precision'] * 16)
+            from_ = (to-1)*-1 
+        else:
+            to = type['precision'] * 32
+            from_ = 0 
+        return from_,to          
+
+# class Enum():
+#     def __init__(self,values):
+#         self.values =values
+#     def values(self):
+#         return self.values    
+#     def value(self,_key):
+#         return self.values[_key]
+
+from expression.core import exp
+
 class ExpManager(Manager):
     def __init__(self,mgr):
         super(ExpManager,self).__init__(mgr)
@@ -178,30 +204,6 @@ class ExpManager(Manager):
             value = self.solve(param['default'],param['type'],context)  
         param['value'] =value         
 
-class TypeManager(Manager):
-    def __init__(self,mgr):
-        super(TypeManager,self).__init__(mgr)
-
-    def range(self,type):
-        from_=None
-        to= None
-        if type['sign'] ==  True:
-            to = (type['precision'] * 16)
-            from_ = (to-1)*-1 
-        else:
-            to = type['precision'] * 32
-            from_ = 0 
-        return from_,to          
-
-class Enum():
-    def __init__(self,values):
-        self.values =values
-
-    def values(self):
-        return self.values
-    
-    def value(self,_key):
-        return self.values[_key]
 
 class EnumManager(Manager):
     def __init__(self,mgr):

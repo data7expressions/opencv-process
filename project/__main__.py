@@ -17,6 +17,7 @@ def init():
 #    plugins.append(path.join(rootpath,'project/ui'))
    plugins.append(path.join(rootpath,'data/workspace'))
 
+
    mgr = MainManager()
    mgr.init(plugins) 
    mgr.context['workspace']=path.join(getcwd(),'data/workspace')

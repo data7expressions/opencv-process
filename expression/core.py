@@ -122,7 +122,7 @@ class Array(Operator):
         return list 
 class Object(Operator):
     def __init__(self,attributes=[]):
-      super(Object,self).__init__([attributes])
+      super(Object,self).__init__(attributes)
 
     @property
     def value(self):
@@ -152,11 +152,236 @@ class IndexDecorator(Operator):
     def value(self): 
         return self._operands[0].value[self._operands[1].value]
 
-class ExpManager():
+class Addition(Operator):
+    def solve(self,a,b):
+        return a+b 
+class Subtraction (Operator):
+    def solve(self,a,b):
+        return a-b   
+class Multiplication(Operator):
+    def solve(self,a,b):
+        return a*b 
+class Division (Operator):
+    def solve(self,a,b):
+        return a/b  
+class Exponentiation(Operator):
+    def solve(self,a,b):
+        return a**b 
+class FloorDivision (Operator):
+    def solve(self,a,b):
+        return a//b   
+class Mod (Operator):
+    def solve(self,a,b):
+        return a%b 
+
+class BitAnd(Operator):
+    def solve(self,a,b):
+        return a & b 
+class BitOr(Operator):
+    def solve(self,a,b):
+        return a | b
+class BitXor(Operator):
+    def solve(self,a,b):
+        return a ^ b                  
+class BitNot(Operator):
+    @property
+    def value(self):
+        return ~ self._operands[0].value
+class LeftShift(Operator):
+    def solve(self,a,b):
+        return a << b   
+class RightShift(Operator):
+    def solve(self,a,b):
+        return a >> b   
+
+class Equal(Operator):
+    def solve(self,a,b):
+        return a==b
+class NotEqual(Operator):
+    def solve(self,a,b):
+        return a!=b          
+class GreaterThan(Operator):
+    def solve(self,a,b):
+        return a>b
+class LessThan(Operator):
+    def solve(self,a,b):
+        return a<b 
+class GreaterThanOrEqual(Operator):
+    def solve(self,a,b):
+        return a>=b
+class LessThanOrEqual(Operator):
+    def solve(self,a,b):
+        return a<=b                
+
+class And(Operator):
+    def solve(self,a,b):
+        return a and b   
+class Or(Operator):
+    def solve(self,a,b):
+        return a or b 
+class Not(Operator):
+    @property
+    def value(self):
+        return not self._operands[0].value
+
+class Assigment(Operator):
+    @property
+    def value(self):
+        self._operands[0].value = self._operands[1].value
+        return self._operands[0].value
+class AssigmentAddition(Operator):
+    @property
+    def value(self):
+        self._operands[0].value += self._operands[1].value
+        return self._operands[0].value
+class AssigmentSubtraction (Operator):
+    @property
+    def value(self):
+        self._operands[0].value -= self._operands[1].value
+        return self._operands[0].value  
+class AssigmentMultiplication(Operator):
+    @property
+    def value(self):
+        self._operands[0].value *= self._operands[1].value
+        return self._operands[0].value 
+class AssigmentDivision (Operator):
+    @property
+    def value(self):
+        self._operands[0].value /= self._operands[1].value
+        return self._operands[0].value  
+class AssigmentExponentiation(Operator):
+    @property
+    def value(self):
+        self._operands[0].value **= self._operands[1].value
+        return self._operands[0].value 
+class AssigmentFloorDivision (Operator):
+    @property
+    def value(self):
+        self._operands[0].value //= self._operands[1].value
+        return self._operands[0].value   
+class AssigmentMod (Operator):
+    @property
+    def value(self):
+        self._operands[0].value %= self._operands[1].value
+        return self._operands[0].value 
+class AssigmentBitAnd(Operator):
+    @property
+    def value(self):
+        self._operands[0].value &= self._operands[1].value
+        return self._operands[0].value 
+class AssigmentBitOr(Operator):
+    @property
+    def value(self):
+        self._operands[0].value |= self._operands[1].value
+        return self._operands[0].value
+class AssigmentBitXor(Operator):
+    @property
+    def value(self):
+        self._operands[0].value ^= self._operands[1].value
+        return self._operands[0].value
+class AssigmentLeftShift(Operator):
+    @property
+    def value(self):
+        self._operands[0].value <<= self._operands[1].value
+        return self._operands[0].value
+class AssigmentRightShift(Operator):
+    @property
+    def value(self):
+        self._operands[0].value >>= self._operands[1].value
+        return self._operands[0].value
+
+
+class Manager():
     def __init__(self):
        self.operators={}
        self.enums={} 
        self.functions={}
+       self.initOperators()
+       self.initFunctions()
+       self.initEnums()
+
+    def initOperators(self):        
+        self.add('+',Addition)
+        self.add('-',Subtraction)
+        self.add('*',Multiplication)
+        self.add('/',Division)
+        self.add('**',Exponentiation)
+        self.add('//',FloorDivision)
+        self.add('%',Mod)
+
+        self.add('&',BitAnd)
+        self.add('|',BitOr)
+        self.add('^',BitXor)
+        self.add('~',BitNot)
+        self.add('<<',LeftShift)
+        self.add('>>',RightShift)
+
+        self.add('==',Equal)
+        self.add('!=',NotEqual)
+        self.add('>',GreaterThan)
+        self.add('<',LessThan)
+        self.add('>=',GreaterThanOrEqual)
+        self.add('<=',LessThanOrEqual)
+
+        self.add('&&',And)
+        self.add('||',Or)
+        self.add('!',Not)
+
+        self.add('=',Assigment)
+        self.add('+=',AssigmentAddition)
+        self.add('-=',AssigmentSubtraction)
+        self.add('*=',AssigmentMultiplication)
+        self.add('/=',AssigmentDivision)
+        self.add('**=',AssigmentExponentiation)
+        self.add('//=',AssigmentFloorDivision)
+        self.add('%=',AssigmentMod)
+        self.add('&=',AssigmentBitAnd)
+        self.add('|=',AssigmentBitOr)
+        self.add('^=',AssigmentBitXor)
+        self.add('<<=',AssigmentLeftShift)
+        self.add('>>=',AssigmentRightShift)
+
+    def initFunctions(self): 
+        self.addFunction('nvl',lambda a,b: a if a!=None else b )
+        # https://docs.python.org/2.5/lib/string-methods.html
+        self.addFunction('capitalize',lambda str: str.capitalize(),['str'])
+        self.addFunction('count',lambda str,sub,start=None,end=None: str.count(sub,start,end),['str'])
+        self.addFunction('decode',lambda str,encoding: str.decode(encoding),['str'])
+        self.addFunction('encode',lambda str,encoding: str.encode(encoding),['str'])
+        self.addFunction('endswith',lambda str,suffix,start=None,end=None: str.endswith(suffix,start,end),['str'])
+        self.addFunction('find',lambda str,sub,start=None,end=None: str.find(sub,start,end),['str'])
+        self.addFunction('index',lambda str,sub,start=None,end=None: str.index(sub,start,end),['str'])
+        self.addFunction('isalnum',lambda str: str.isalnum(),['str'])
+        self.addFunction('isalpha',lambda str: str.isalpha(),['str'])
+        self.addFunction('isdigit',lambda str: str.isdigit(),['str'])
+        self.addFunction('islower',lambda str: str.islower(),['str'])
+        self.addFunction('isspace',lambda str: str.isspace(),['str'])
+        self.addFunction('istitle',lambda str: str.istitle(),['str'])
+        self.addFunction('isupper',lambda str: str.isupper(),['str'])
+        self.addFunction('join',lambda str,seq: str.join(seq),['str'])
+        self.addFunction('ljust',lambda str,width,fillchar=None: str.ljust(width,fillchar),['str'])
+        self.addFunction('lower',lambda str: str.lower(),['str'])
+        self.addFunction('lstrip',lambda str,chars: str.lstrip(chars),['str'])
+        self.addFunction('partition',lambda str,sep: str.partition(sep))
+        self.addFunction('replace',lambda str,old,new,count=None: str.replace(old,new,count),['str'])
+        self.addFunction('rfind',lambda str,sub,start=None,end=None: str.rfind(sub,start,end),['str'])
+        self.addFunction('rindex',lambda str,sub,start=None,end=None: str.rindex(sub,start,end),['str'])
+        self.addFunction('rjust',lambda str,width,fillchar=None: str.rjust(width,fillchar),['str'])
+        self.addFunction('rpartition',lambda str,sep: str.rpartition(sep),['str'])
+        self.addFunction('rsplit',lambda str,sep,maxsplit=None: str.rsplit(sep,maxsplit),['str'])
+        self.addFunction('rstrip',lambda str,chars: str.lstrip(chars),['str'])
+        self.addFunction('split',lambda str,sep,maxsplit=None: str.split(sep,maxsplit),['str'])
+        self.addFunction('splitlines',lambda str,keepends=None: str.splitlines(keepends),['str'])
+        self.addFunction('startswith',lambda str,prefix,start=None,end=None: str.startswith(prefix,start,end),['str'])
+        self.addFunction('strip',lambda str,chars: str.lstrip(chars),['str'])
+        self.addFunction('swapcase',lambda str: str.swapcase(),['str'])
+        self.addFunction('title',lambda str: str.title(),['str'])
+        self.addFunction('translate',lambda str,table,deletechars=None: str.translate(table,deletechars),['str'])
+        self.addFunction('upper',lambda str: str.upper(),['str'])
+        self.addFunction('zfill',lambda str,width: str.zfill(width),['str'])   
+   
+    def initEnums(self): 
+        self.addEnum('DayOfWeek',{"Monday":1,"Tuesday":2,"Wednesday":3,"Thursday":4,"Friday":5,"Saturday":6,"Sunday":0})
 
     def add(self,k,imp):
         self.operators[k]=imp
@@ -176,6 +401,9 @@ class ExpManager():
 
     def getEnumValue(self,name,option): 
         return self.enums[name][option]
+
+    def getEnum(self,name): 
+        return self.enums[name]
 
     def addFunction(self,key,imp,types=['any']):
         if key not in self.functions.keys():
@@ -206,14 +434,14 @@ class ExpManager():
 
     def parse(self,string):
         try:
-            parser = ExpParser(self,string)
+            parser = Parser(self,string)
             expression= parser.parse() 
             del parser
             return expression  
         except:
             raise ExpressionError('error in expression: '+string)  
 
-class ExpParser():
+class Parser():
     def __init__(self,mgr,string):
        self.mgr = mgr 
        self.chars = self.getChars(string)
@@ -349,13 +577,23 @@ class ExpParser():
                 else:
                     value =float(value)
                 operand = Constant(value,'float')
-            elif '.' in value and self.mgr.isEnum(value):
-                  names = value.split('.')
-                  enumName = names[0]
-                  enumOption = names[1] 
-                  enumValue= self.mgr.getEnumValue(enumName,enumOption)
-                  enumType = type(enumValue).__name__
-                  operand = Constant(enumValue,enumType)
+            elif self.mgr.isEnum(value):                
+                if '.' in value and self.mgr.isEnum(value):
+                    names = value.split('.')
+                    enumName = names[0]
+                    enumOption = names[1] 
+                    enumValue= self.mgr.getEnumValue(enumName,enumOption)
+                    enumType = type(enumValue).__name__
+                    operand = Constant(enumValue,enumType)
+                else:
+                    values= self.mgr.getEnum(value)
+                    attributes= []
+                    for name in values:
+                        _value = values[name]
+                        _valueType = type(_value).__name__
+                        attribute = KeyValue(name,Constant(_value,_valueType))
+                        attributes.append(attribute)
+                    operand= Object(attributes)
             else:
                 operand = Variable(value)
         elif char == '\'' or char == '"':
@@ -445,260 +683,13 @@ class ExpParser():
         
         return Object(attributes) 
 
-def addElements():
-
-    class Addition(Operator):
-        def solve(self,a,b):
-            return a+b 
-    class Subtraction (Operator):
-        def solve(self,a,b):
-            return a-b   
-    class Multiplication(Operator):
-        def solve(self,a,b):
-            return a*b 
-    class Division (Operator):
-        def solve(self,a,b):
-            return a/b  
-    class Exponentiation(Operator):
-        def solve(self,a,b):
-            return a**b 
-    class FloorDivision (Operator):
-        def solve(self,a,b):
-            return a//b   
-    class Mod (Operator):
-        def solve(self,a,b):
-            return a%b 
-
-    class BitAnd(Operator):
-        def solve(self,a,b):
-            return a & b 
-    class BitOr(Operator):
-        def solve(self,a,b):
-            return a | b
-    class BitXor(Operator):
-        def solve(self,a,b):
-            return a ^ b                  
-    class BitNot(Operator):
-        @property
-        def value(self):
-            return ~ self._operands[0].value
-    class LeftShift(Operator):
-        def solve(self,a,b):
-            return a << b   
-    class RightShift(Operator):
-        def solve(self,a,b):
-            return a >> b   
-
-    class Equal(Operator):
-        def solve(self,a,b):
-            return a==b
-    class NotEqual(Operator):
-        def solve(self,a,b):
-            return a!=b          
-    class GreaterThan(Operator):
-        def solve(self,a,b):
-            return a>b
-    class LessThan(Operator):
-        def solve(self,a,b):
-            return a<b 
-    class GreaterThanOrEqual(Operator):
-        def solve(self,a,b):
-            return a>=b
-    class LessThanOrEqual(Operator):
-        def solve(self,a,b):
-            return a<=b                
-
-    class And(Operator):
-        def solve(self,a,b):
-            return a and b   
-    class Or(Operator):
-        def solve(self,a,b):
-            return a or b 
-    class Not(Operator):
-        @property
-        def value(self):
-            return not self._operands[0].value
-
-    class Assigment(Operator):
-        @property
-        def value(self):
-            self._operands[0].value = self._operands[1].value
-            return self._operands[0].value
-    class AssigmentAddition(Operator):
-        @property
-        def value(self):
-            self._operands[0].value += self._operands[1].value
-            return self._operands[0].value
-    class AssigmentSubtraction (Operator):
-        @property
-        def value(self):
-            self._operands[0].value -= self._operands[1].value
-            return self._operands[0].value  
-    class AssigmentMultiplication(Operator):
-        @property
-        def value(self):
-            self._operands[0].value *= self._operands[1].value
-            return self._operands[0].value 
-    class AssigmentDivision (Operator):
-        @property
-        def value(self):
-            self._operands[0].value /= self._operands[1].value
-            return self._operands[0].value  
-    class AssigmentExponentiation(Operator):
-        @property
-        def value(self):
-            self._operands[0].value **= self._operands[1].value
-            return self._operands[0].value 
-    class AssigmentFloorDivision (Operator):
-        @property
-        def value(self):
-            self._operands[0].value //= self._operands[1].value
-            return self._operands[0].value   
-    class AssigmentMod (Operator):
-        @property
-        def value(self):
-            self._operands[0].value %= self._operands[1].value
-            return self._operands[0].value 
-    class AssigmentBitAnd(Operator):
-        @property
-        def value(self):
-            self._operands[0].value &= self._operands[1].value
-            return self._operands[0].value 
-    class AssigmentBitOr(Operator):
-        @property
-        def value(self):
-            self._operands[0].value |= self._operands[1].value
-            return self._operands[0].value
-    class AssigmentBitXor(Operator):
-        @property
-        def value(self):
-            self._operands[0].value ^= self._operands[1].value
-            return self._operands[0].value
-    class AssigmentLeftShift(Operator):
-        @property
-        def value(self):
-            self._operands[0].value <<= self._operands[1].value
-            return self._operands[0].value
-    class AssigmentRightShift(Operator):
-        @property
-        def value(self):
-            self._operands[0].value >>= self._operands[1].value
-            return self._operands[0].value
-
-    exp.add('+',Addition)
-    exp.add('-',Subtraction)
-    exp.add('*',Multiplication)
-    exp.add('/',Division)
-    exp.add('**',Exponentiation)
-    exp.add('//',FloorDivision)
-    exp.add('%',Mod)
-
-    exp.add('&',BitAnd)
-    exp.add('|',BitOr)
-    exp.add('^',BitXor)
-    exp.add('~',BitNot)
-    exp.add('<<',LeftShift)
-    exp.add('>>',RightShift)
-
-    exp.add('==',Equal)
-    exp.add('!=',NotEqual)
-    exp.add('>',GreaterThan)
-    exp.add('<',LessThan)
-    exp.add('>=',GreaterThanOrEqual)
-    exp.add('<=',LessThanOrEqual)
-
-    exp.add('&&',And)
-    exp.add('||',Or)
-    exp.add('!',Not)
-
-    exp.add('=',Assigment)
-    exp.add('+=',AssigmentAddition)
-    exp.add('-=',AssigmentSubtraction)
-    exp.add('*=',AssigmentMultiplication)
-    exp.add('/=',AssigmentDivision)
-    exp.add('**=',AssigmentExponentiation)
-    exp.add('//=',AssigmentFloorDivision)
-    exp.add('%=',AssigmentMod)
-    exp.add('&=',AssigmentBitAnd)
-    exp.add('|=',AssigmentBitOr)
-    exp.add('^=',AssigmentBitXor)
-    exp.add('<<=',AssigmentLeftShift)
-    exp.add('>>=',AssigmentRightShift)
-    
-  
+exp = Manager()
 
 
-    exp.addEnum('ColorConversion',{"BGR2GRAY":6
-                                  ,"BGR2HSV":40
-                                  ,"BGR2RGB":4
-                                  ,"GRAY2BGR":8
-                                  ,"HSV2BGR":54
-                                  ,"HSV2RGB":55
-                                  ,"RGB2GRAY":7
-                                  ,"RGB2HSV":41})
-
-    exp.addFunction('nvl',lambda a,b: a if a!=None else b )
-
-    # https://docs.python.org/2.5/lib/string-methods.html
-    exp.addFunction('capitalize',lambda str: str.capitalize(),['str'])
-    exp.addFunction('count',lambda str,sub,start=None,end=None: str.count(sub,start,end),['str'])
-    exp.addFunction('decode',lambda str,encoding: str.decode(encoding),['str'])
-    exp.addFunction('encode',lambda str,encoding: str.encode(encoding),['str'])
-    exp.addFunction('endswith',lambda str,suffix,start=None,end=None: str.endswith(suffix,start,end),['str'])
-    exp.addFunction('find',lambda str,sub,start=None,end=None: str.find(sub,start,end),['str'])
-    exp.addFunction('index',lambda str,sub,start=None,end=None: str.index(sub,start,end),['str'])
-    exp.addFunction('isalnum',lambda str: str.isalnum(),['str'])
-    exp.addFunction('isalpha',lambda str: str.isalpha(),['str'])
-    exp.addFunction('isdigit',lambda str: str.isdigit(),['str'])
-    exp.addFunction('islower',lambda str: str.islower(),['str'])
-    exp.addFunction('isspace',lambda str: str.isspace(),['str'])
-    exp.addFunction('istitle',lambda str: str.istitle(),['str'])
-    exp.addFunction('isupper',lambda str: str.isupper(),['str'])
-    exp.addFunction('join',lambda str,seq: str.join(seq),['str'])
-    exp.addFunction('ljust',lambda str,width,fillchar=None: str.ljust(width,fillchar),['str'])
-    exp.addFunction('lower',lambda str: str.lower(),['str'])
-    exp.addFunction('lstrip',lambda str,chars: str.lstrip(chars),['str'])
-    exp.addFunction('partition',lambda str,sep: str.partition(sep))
-    exp.addFunction('replace',lambda str,old,new,count=None: str.replace(old,new,count),['str'])
-    exp.addFunction('rfind',lambda str,sub,start=None,end=None: str.rfind(sub,start,end),['str'])
-    exp.addFunction('rindex',lambda str,sub,start=None,end=None: str.rindex(sub,start,end),['str'])
-    exp.addFunction('rjust',lambda str,width,fillchar=None: str.rjust(width,fillchar),['str'])
-    exp.addFunction('rpartition',lambda str,sep: str.rpartition(sep),['str'])
-    exp.addFunction('rsplit',lambda str,sep,maxsplit=None: str.rsplit(sep,maxsplit),['str'])
-    exp.addFunction('rstrip',lambda str,chars: str.lstrip(chars),['str'])
-    exp.addFunction('split',lambda str,sep,maxsplit=None: str.split(sep,maxsplit),['str'])
-    exp.addFunction('splitlines',lambda str,keepends=None: str.splitlines(keepends),['str'])
-    exp.addFunction('startswith',lambda str,prefix,start=None,end=None: str.startswith(prefix,start,end),['str'])
-    exp.addFunction('strip',lambda str,chars: str.lstrip(chars),['str'])
-    exp.addFunction('swapcase',lambda str: str.swapcase(),['str'])
-    exp.addFunction('title',lambda str: str.title(),['str'])
-    exp.addFunction('translate',lambda str,table,deletechars=None: str.translate(table,deletechars),['str'])
-    exp.addFunction('upper',lambda str: str.upper(),['str'])
-    exp.addFunction('zfill',lambda str,width: str.zfill(width),['str'])
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-exp = ExpManager()
-addElements()
-
-# result=exp.solve('ColorConversion.GRAY2BGR',{"a":"aaa"})
 context = {"a":"1","b":2,"c":{"a":4,"b":5}}
-# result=exp.solve('c.b',context)
-# result=exp.solve('a=1',context)
-# result=exp.solve('c.a=1',context)
-result=exp.solve('a*3==b+1',context)
-
+# result=exp.solve('a*3==b+1',context)
+# result=exp.getEnum('DayOfWeek')
+result=exp.solve('DayOfWeek',context)
 print(result)
 print(context)
 # print (1+(2**3)*4) 
