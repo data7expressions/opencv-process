@@ -259,25 +259,7 @@ class ExpParser():
         return self.chars[self.index+1]
     @property
     def end(self):
-        return self.index >= self.length
-        
-    # def reduce(self,expression):        
-    #     if hasattr(expression, 'operands'):
-    #         i=0
-    #         for p in expression.operands:                
-    #             if hasattr(p,'operands'):
-    #                 expression.operands[i] =self.reduce(p)
-    #             i+=1    
-    #         allConstants=True              
-    #         for p in expression.operands:
-    #             if type(p).__name__ !=  'Constant':
-    #                 allConstants=False
-    #                 break
-    #         if  allConstants:
-    #             value = expression.value
-    #             _type = type(value).__name__
-    #             return Constant(value,_type)
-    #     return expression     
+        return self.index >= self.length   
 
     def getExpression(self,a=None,op1=None,_break=''):
         expression = None
