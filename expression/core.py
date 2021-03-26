@@ -1,4 +1,5 @@
 import re
+from typing import Iterable
 # from typing import ChainMap
 
 class ExpressionError(Exception):
@@ -47,11 +48,11 @@ class Variable(Operand):
             _value=_value[n]
         _value=value       
 class Operator(Operand):
-    def __init__(self,operands ):
+    def __init__(self,operands:Iterable ):
       self._operands  = operands
 
     @property
-    def operands(self):
+    def operands(self)-> Iterable:
         return self._operands
 
     @property
@@ -157,7 +158,10 @@ class ExpManager():
         self.operators[k]=imp
       
     def new(self,k,operands):
-        return self.operators[k](operands)
+        try:
+            return self.operators[k](operands)
+        except:
+            raise ExpressionError('error with operator: '+str(k))    
 
     def addEnum(self,key,imp:dict):
         self.enums[key] =imp 
@@ -197,10 +201,15 @@ class ExpManager():
         return expression.value
 
     def parse(self,string):
-        parser = ExpParser(self,string)
-        expression= parser.parse() 
-        del parser
-        return expression   
+        try:
+            parser = ExpParser(self,string)
+            expression= parser.parse() 
+            del parser
+            return expression  
+        except:
+            raise ExpressionError('error in expression: '+string)  
+
+         
 
 class ExpParser():
     def __init__(self,mgr,string):
@@ -238,7 +247,6 @@ class ExpParser():
         if len(operands)==1 :
             return operands[0]
         return Array(operands) 
-       
 
     @property
     def previous(self):
@@ -252,27 +260,64 @@ class ExpParser():
     @property
     def end(self):
         return self.index >= self.length
-    
-    def getExpression(self,a=None,op1=None,_break=''):              
+        
+    # def reduce(self,expression):        
+    #     if hasattr(expression, 'operands'):
+    #         i=0
+    #         for p in expression.operands:                
+    #             if hasattr(p,'operands'):
+    #                 expression.operands[i] =self.reduce(p)
+    #             i+=1    
+    #         allConstants=True              
+    #         for p in expression.operands:
+    #             if type(p).__name__ !=  'Constant':
+    #                 allConstants=False
+    #                 break
+    #         if  allConstants:
+    #             value = expression.value
+    #             _type = type(value).__name__
+    #             return Constant(value,_type)
+    #     return expression     
+
+    def getExpression(self,a=None,op1=None,_break=''):
+        expression = None
+        b = None
+        isbreak = False               
         while not self.end:
             if a==None and op1==None: 
                 a=  self.getOperand()
                 op1= self.getOperator()
-                if op1==None or op1 in _break: return a
-
+                if op1==None or op1 in _break: 
+                    expression = a
+                    isbreak= True
+                    break
             b=  self.getOperand()
             op2= self.getOperator()
-
             if op2 == None or op2 in _break:
-                return self.mgr.new(op1,[a,b])
+                expression= self.mgr.new(op1,[a,b])
+                isbreak= True
+                break
             elif self.priority(op1)>=self.priority(op2):
                 a=self.mgr.new(op1,[a,b])
                 op1=op2
             else:
                 b = self.getExpression(a=b,op1=op2,_break=_break)
-                return self.mgr.new(op1,[a,b])
-
-        return self.mgr.new(op1,[a,b])         
+                expression= self.mgr.new(op1,[a,b])
+                isbreak= True
+                break
+        if not isbreak: expression=self.mgr.new(op1,[a,b])
+        # if all the operands are constant, reduce the expression by calculating the result and return a constant 
+        if expression != None and hasattr(expression, 'operands'):
+            allConstants=True              
+            for p in expression.operands:
+                if type(p).__name__ !=  'Constant':
+                    allConstants=False
+                    break
+            if  allConstants:
+                value = expression.value
+                _type = type(value).__name__
+                return Constant(value,_type)
+        return expression             
 
     def getOperand(self):        
         isNegative=False
@@ -592,8 +637,8 @@ def addElements():
 exp = ExpManager()
 addElements()
 
-result=exp.solve('ColorConversion.GRAY2BGR',{"a":"aaa"})
-# result=exp.solve('a.count()',{"a":[1,2,3]})
+# result=exp.solve('ColorConversion.GRAY2BGR',{"a":"aaa"})
+result=exp.solve('a.capitalize()',{"a":"aaa","b":2})
 print(result)
 # print (1+(2**3)*4) 
 # print ((2**3)) 

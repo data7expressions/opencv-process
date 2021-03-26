@@ -44,3 +44,4 @@ object      | {} {x:'xxx',x:##.##,x:xxx}
 - [operants](https://www.w3schools.com/python/python_operators.asp)
 - [unit test](https://docs.python.org/3/library/unittest.html)
 - [example](https://stackoverflow.com/questions/13055884/parsing-math-expression-in-python-and-solving-to-find-an-answer)
+- [example](https://cp-algorithms.com/string/expression_parsing.html)
