@@ -288,7 +288,7 @@ class ExpParser():
                 isbreak= True
                 break
         if not isbreak: expression=self.mgr.new(op1,[a,b])
-        # if all the operands are constant, reduce the expression by calculating the result and return a constant 
+        # if all the operands are constant, reduce the expression a constant 
         if expression != None and hasattr(expression, 'operands'):
             allConstants=True              
             for p in expression.operands:
