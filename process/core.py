@@ -104,39 +104,7 @@ class TypeManager(Manager):
 
 class TaskManager(Manager):
     def __init__(self,mgr):
-        super(TaskManager,self).__init__(mgr)
-
-# class ExpManager(Manager):
-#     def __init__(self,mgr):
-#         super(ExpManager,self).__init__(mgr)
-#         self._expManager = ExpressionManager()
-
-#     def addEnum(self,name,values:dict):
-#         self._expManager.addEnum(name,values)
-#     def getEnum(self,name):
-#         return self._expManager.getEnum(name) 
-
-#     def parse(self,string:str)->Operand:
-#         return self._expManager.parse(string)
-      
-#     def eval(self,expression:Operand,context:Context,_type:str=None):
-#         result=self._expManager.eval(expression,context)
-#         if _type == 'filepath' or _type == 'folderpath' :
-#             if not path.isabs(result): 
-#                 result = path.join(context['__workspace'], result)        
-#         return result
-
-#     # def evalParams(self,params,context):  
-#     #     for param in params:
-#     #         self.evalParam(param,context)
-
-#     # def evalParam(self,param,context):
-#     #     value=None
-#     #     if 'exp' in param:
-#     #         value = self.solve(param['exp'],context,param['type'])
-#     #     elif 'default' in param:
-#     #         value = self.solve(param['default'],context,param['type'])  
-#     #     param['value'] =value         
+        super(TaskManager,self).__init__(mgr)  
 
 class EnumManager(Manager):
     def __init__(self,mgr):
@@ -221,7 +189,7 @@ class Process:
     def execute(self,_key):
         if self._context['__status']=='running':            
             node=self.node(_key)
-            self._context['__current']=node 
+            self._context['__current']={'name': node['name'] ,'type': node['type']} 
             type=node['type'] 
             if type == 'start':
                 self.executeStart(node)
@@ -230,7 +198,7 @@ class Process:
             elif type == 'end':
                 self.executeEnd(node)            
 
-            self._context['__last']=node  
+            self._context['__last']={'name': node['name'] ,'type': node['type']}   
             self.nextNode(node)
         elif self._context['__status']=='pausing':
             self._context['__status']='paused'   
@@ -243,12 +211,12 @@ class Process:
         pass
     def executeTask(self,node):
         try:
-            taskManager = self.mgr.Task[node['task']]
+            task = self.mgr.Task[node['task']]
             input={}
             for p in node['input']:
                 value = self.eval(p['expression'],self._context,p['type'])
                 input[p['name']]= value 
-            result=taskManager.execute(**input)
+            result=task.execute(**input)
             if 'output' in node:
                 for i,p  in enumerate(node['output']):
                     self._context[p['assig']]=result[i] if type(result) is tuple else result   
