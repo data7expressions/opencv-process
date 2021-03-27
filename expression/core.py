@@ -1,8 +1,7 @@
 import re
 from mgr.base import *
 
-class ExpressionError(Exception):
-    pass
+class ExpressionError(Exception):pass
 
 class Operand():
     @property

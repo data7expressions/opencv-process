@@ -1,5 +1,6 @@
 Process:
   test:
+    type: bpm
     input:
       - name: source
         type: filepath

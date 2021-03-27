@@ -1,4 +1,5 @@
 from process.core import MainManager
+from mgr.base import Context
 from os import path,getcwd
 
 def onChange(key,value,oldValue=None):
@@ -19,10 +20,10 @@ if __name__ == "__main__":
     init = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
             ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'}
                   
-                 
-    process = mgr.Process.create('test',init)
-    process.context.onChange += onChange
-    mgr.Process.start(process) 
+    context = Context(init)
+    context.onChange += onChange             
+    processInstance = mgr.Process.create('test',context)
+    mgr.Process.start(processInstance) 
 
 
      
