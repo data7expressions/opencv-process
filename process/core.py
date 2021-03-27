@@ -127,7 +127,6 @@ class ProcessError(Exception):pass
 class Object(object):pass
 
 class ProcessSpec(object):pass
-     
 
 class BpmParser:
     def __init__(self,mgr,expManager):
@@ -337,114 +336,6 @@ class BpmInstance(ProcessInstance):
             else:
                 self.execute(p.target)  
   
-
-
-# class Process:
-#     def __init__(self,parent,spec,context,mgr):
-#         self._id=id 
-#         self._parent=parent
-#         self._spec=spec
-#         self._context=Context(context)      
-#         self.mgr=mgr
-#         self.expManager = ExpressionManager()
-#         self.init()
-#     @property
-#     def id(self):
-#         return self._id
-#     @id.setter
-#     def id(self,value):
-#         self._id=value      
-#     @property
-#     def parent(self):
-#         return self._parent
-#     @property
-#     def spec(self):
-#         return self._spec        
-#     @property
-#     def context(self):
-#         return self._context
-#     def eval(self,expression:Operand,context:Context,_type:str=None):
-#         result=self.expManager.eval(expression,context)
-#         if _type == 'filepath' or _type == 'folderpath' :
-#             if not path.isabs(result): 
-#                 result = path.join(context['__workspace'], result)        
-#         return result
-#     def node(self,_key):
-#         return self._spec['nodes'][_key]  
-#     def init(self):
-#         if 'input' in self._spec:
-#             for p in self._spec['input']:
-#                 if p['name'] not in self._context and 'defaultExp' in p:
-#                     self._context[p['name']] = self.eval(p['defaultExp'],self._context,p['type']) 
-#         if 'declare' in self._spec:
-#             for p in self._spec['declare']:
-#                 if 'defaultExp' in p:
-#                     self._context[p['name']] = self.eval(p['defaultExp'],self._context,p['type'])
-#                 else:
-#                     self._context[p['name']] = None
-#     def start(self):
-#         self.context['__status']='running'
-#         starts = dict(filter(lambda p: p[1]['type'] == 'start', self._spec['nodes'].items()))
-#         for name in starts:
-#             start = starts[name]
-#             if 'expression' in start:
-#                 if self.eval(start['expression'],self._context):
-#                     self.execute(name)
-#             else:
-#                 self.execute(name)
-#     def stop(self):
-#         self._context['__status']='stopping'
-#     def pause(self):
-#         self._context['__status']='pausing'  
-#     def execute(self,_key):
-#         if self._context['__status']=='running':            
-#             node=self.node(_key)
-#             self._context['__current']={'name': node['name'] ,'type': node['type']} 
-#             type=node['type'] 
-#             if type == 'start':
-#                 self.executeStart(node)
-#             elif type == 'task':
-#                 self.executeTask(node)    
-#             elif type == 'end':
-#                 self.executeEnd(node) 
-#             self._context['__last']={'name': node['name'] ,'type': node['type']}   
-#             self.nextNode(node)
-#         elif self._context['__status']=='pausing':
-#             self._context['__status']='paused'   
-#         elif self._context['__status']=='stopping':
-#             self._context['__status']='stopped'
-#     def executeStart(self,node):
-#         pass    
-#     def executeEnd(self,node):
-#         pass
-#     def executeTask(self,node):
-#         try:
-#             task = self.mgr.Task[node['task']]
-#             input={}
-#             for p in node['input']:
-#                 value = self.eval(p['expression'],self._context,p['type'])
-#                 input[p['name']]= value 
-#             result=task.execute(**input)
-#             if 'output' in node:
-#                 for i,p  in enumerate(node['output']):
-#                     self._context[p['assig']]=result[i] if type(result) is tuple else result   
-#         except Exception as ex:
-#             print(ex)
-#             raise
-#     def nextNode(self,node):
-#         if 'transition' not in node: return        
-#         transition = node['transition']        
-#         for p in transition:
-#             if 'expression' in transition:
-#                 if self.eval(p['expression'],self._context):
-#                     self.execute(p['target']) 
-#             else:
-#                 self.execute(p['target'])  
-   
-
-
-
-
 class ProcessManager(Manager):
     def __init__(self,mgr):        
         super(ProcessManager,self).__init__(mgr)
