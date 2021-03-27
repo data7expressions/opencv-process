@@ -8,6 +8,7 @@ from os import path
 import glob
 import importlib.util
 import inspect
+from multiprocessing import Process as ParallelProcess
 
 # TODO mover a mgr.core
 class MainManager(Manager,metaclass=Singleton):
@@ -187,16 +188,17 @@ class BpmParser:
     def parseNode(self,spec):
         type=spec['type'] 
         if type == 'start':return self.parseNodeStart(spec)
-        elif type == 'end':return self.parseNodeEnd(spec)            
+        elif type == 'end':return self.parseNodeDefault(Object(),spec)           
         elif type == 'task':return self.parseNodeTask(spec)
+        elif type == 'exclusiveGateway':return self.parseNodeGateway(spec)
+        elif type == 'inclusiveGateway':return self.parseNodeGateway(spec)
+        elif type == 'parallelGateway':return self.parseNodeGateway(spec)
         else: raise ProcessError('not found node type :'+type) 
      
     def parseNodeStart(self,spec):        
         node= self.parseNodeDefault(Object(),spec)
         node.expression = self.expManager.parse(spec['exp']) if 'exp' in spec else None
         return node
-    def parseNodeEnd(self,spec):        
-        return self.parseNodeDefault(Object(),spec)
     def parseNodeTask(self,spec):        
         node= self.parseNodeDefault(Object(),spec)
         node.task = Object()
@@ -220,14 +222,12 @@ class BpmParser:
                 node.task.output.append(param)        
         return node
 
+    def parseNodeGateway(self,spec):        
+        node= self.parseNodeDefault(Object(),spec)
+        node.key = spec['key'] if 'key' in spec else 'default'
+        return node
     # TODO
     def parseNodeScript(self,spec):pass
-    # TODO
-    def parseNodeExclusiveGateway(self,spec):pass
-    # TODO
-    def parseNodeInclusiveGateway(self,spec):pass
-    # TODO
-    def parseNodeParallelGateway(self,spec):pass
     # TODO
     def parseNodeEventGateway(self,spec):pass
     # TODO
@@ -302,6 +302,7 @@ class ProcessInstance:
 class BpmInstance(ProcessInstance):
     def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
         super(BpmInstance,self).__init__(parent,spec,context,mgr,expManager)
+        self.gateways= {}
 
     def start(self):
         self.context['__status']='running'
@@ -324,20 +325,22 @@ class BpmInstance(ProcessInstance):
             node=self._spec.nodes[_key]
             self._context['__current']={'name':node.name ,'type': node.type } 
 
-            if node.type == 'start': self.executeStart(node)                
+            if node.type == 'start': self.nextNode(node)                 
             elif node.type == 'task': self.executeTask(node)                    
             elif node.type == 'end':  self.executeEnd(node)
+            elif node.type == 'exclusiveGateway':self.nextNode(node)
+            elif node.type == 'inclusiveGateway':self.executeInclusiveGateway(node)
+            elif node.type == 'parallelGateway':self.executeParallelGateway(node)
+
             else: raise ProcessError('not found node type :'+node.type)                          
 
             self._context['__last']={'name':node.name ,'type': node.type}   
-            self.nextNode(node)
+            
         elif self._context['__status']=='pausing':
             self._context['__status']='paused'   
         elif self._context['__status']=='stopping':
-            self._context['__status']='stopped'              
-
-    def executeStart(self,node):
-        pass    
+            self._context['__status']='stopped'
+         
     def executeEnd(self,node):
         pass
     def executeTask(self,node):
@@ -353,14 +356,57 @@ class BpmInstance(ProcessInstance):
         except Exception as ex:
             print(ex)
             raise
-
-    def nextNode(self,node):    
+        self.nextNode(node)     
+    
+    # https://stackoverflow.com/questions/7207309/how-to-run-functions-in-parallel
+    # https://stackoverflow.com/questions/1559125/string-arguments-in-python-multiprocessing 
+    def executeParallelGateway(self,node):
+        if node.key in self.gateways:
+            parallels = self.gateways[node.key]
+            if len(parallels)> 0:
+                for p in parallels:
+                    p.join()
+        if len(node.transition) <= 1:
+            self.nextNode(node)
+        else:
+            parallels=[] 
+            for p in node.transition:
+                t =  ParallelProcess(target=self.execute ,args=(p.target,))                
+                parallels.append(t)
+            self.gateways[node.key]=parallels
+            for p in parallels:
+                p.start()
+    def executeInclusiveGateway(self,node):
+        if node.key in self.gateways:
+            count = self.gateways[node.key]
+            if count > 1:
+                count-=1
+                self.gateways[node.key] = count
+            else:
+                if len(node.transition) <= 1:
+                    self.nextNode(node)
+                else:
+                    self.gateways[node.key] = len(node.transition)
+                    for p in node.transition:
+                        if p.expression != None:
+                            if self.eval(p.expression,self._context):
+                                self.execute(p.target)
+                        else:
+                            self.execute(p.target)           
+       
+    def nextNode(self,node):
         for p in node.transition:
             if p.expression != None:
                 if self.eval(p.expression,self._context):
-                    self.execute(p.target) 
+                    self.execute(p.target)
+                    break 
             else:
-                self.execute(p.target)  
+                self.execute(p.target)
+                break
+        
+        
+      
+                      
   
 class ProcessManager(Manager):
     def __init__(self,mgr):        

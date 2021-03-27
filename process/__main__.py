@@ -29,9 +29,9 @@ if __name__ == "__main__":
     mgr.loadPlugin(path.join(currentPath,'../process_test/data/base'))
     mgr.loadPlugin(path.join(currentPath,'../process_test/data/process'))
 
-    context = Context({"a":2,"b":5})
-    context.onChange += onChange             
-    processInstance = mgr.Process.create('bpm01',context)
+    context = Context({"a":6,"b":4})
+    # context.onChange += onChange             
+    processInstance = mgr.Process.create('bpm02',context)
     mgr.Process.start(processInstance,sync=True)
     print(context['a'])
 
