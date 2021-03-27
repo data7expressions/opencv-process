@@ -137,9 +137,10 @@ class BpmParser:
         process = ProcessSpec()
         process.name= spec['name']
         process.type= spec['type']
-        process.init=self.parseInit(spec) 
+        process.bind = spec['bind'] if 'bind' in spec else []
+        process.input=self.parseInput(spec) 
         process.declare=self.parseDeclare(spec) 
-        process.vars=self.getVars(spec)
+        process.vars=self.getVars(process)
         process.nodes = {}        
         for key in spec['nodes']:
             specNode=spec['nodes'][key]
@@ -147,7 +148,7 @@ class BpmParser:
             process.nodes[key] =self.parseNode(specNode)
         return process    
 
-    def parseInit(self,spec:dict):
+    def parseInput(self,spec:dict):
         input = []
         if 'input' in spec:
             for p in spec['input']:
@@ -169,18 +170,18 @@ class BpmParser:
                 declare.append(param)
         return declare                            
 
-    def getVars(self,spec:dict):
-        vars={}
-        if 'input' in spec:
-            for p in spec['input']:
-                var={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}
-                vars[p['name']]=var
-
-        if 'declare' in spec:
-            for p in spec['declare']:
-                var={'type':p['type'],'bind':(True if p['name'] in spec['bind'] else False )}
-                vars[p['name']]=var
-
+    def getVars(self,process:ProcessSpec):
+        vars={}    
+        for p in process.input:
+            var = Object
+            var.type=p.type
+            var.bind = True if p.name in process.bind else False
+            vars[p.name]=var        
+        for p in process.declare:
+            var = Object
+            var.type=p.type
+            var.bind = True if p.name in process.bind else False
+            vars[p.name]=var
         return vars
     
     def parseNode(self,spec):
@@ -242,13 +243,9 @@ class BpmParser:
     # TODO
     def parseNodeRaiseSignal(self,spec):pass
 
-
     def parseNodeDefault(self,node,spec):
         node.name = spec['name']
         node.type = spec['type']
-        
-
-
         node.transition = self.parseTransition(spec)
         return node
 
@@ -289,7 +286,7 @@ class ProcessInstance:
         return self._context
 
     def init(self):
-        for p in self._spec.init:
+        for p in self._spec.input:
             if p.name not in self._context and p.default != None:
                 self._context[p.name] = self.eval(p.default,self._context,p.type)        
         for p in self._spec.declare:
@@ -379,8 +376,11 @@ class ProcessManager(Manager):
         else: raise ProcessError('not found process type :'+type) 
 
     def createInstance(self,spec:ProcessSpec,context:Context,parent=None)-> ProcessInstance:
-        if spec.type == 'bpm': return BpmInstance(parent,spec,context,self.mgr,self.expManager)
+        instance=None
+        if spec.type == 'bpm': instance= BpmInstance(parent,spec,context,self.mgr,self.expManager)
         else: raise ProcessError('not found process type :'+spec.type)
+        instance.id = str(uuid.uuid4())
+        return instance
 
     def applyConfig(self,key,value):
         self._list[key] =self.parse(key,value)
@@ -394,13 +394,15 @@ class ProcessManager(Manager):
         spec=self._list[key]
         return self.createInstance(spec,context,parent) 
 
-    def start(self,instance:ProcessInstance):        
-        try:
-            instance.id = str(uuid.uuid4())             
+    # https://www.genbeta.com/desarrollo/multiprocesamiento-en-python-threads-a-fondo-introduccion
+    # https://rico-schmidt.name/pymotw-3/threading/
+    def start(self,instance:ProcessInstance,sync=False):        
+        try:            
             thread = threading.Thread(target=self._process_start, args=(instance,))
             self._instances[instance.id]= {"instance":instance,"thread":thread }            
+            if not sync: thread.setDaemon(True)            
             thread.start()
-            return instance.id
+            if sync: thread.join()            
         except Exception as ex:
             print(ex)
             raise

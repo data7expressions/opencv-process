@@ -1,0 +1,30 @@
+Process:
+  bpm01:
+    type: bpm
+    input:
+      - name: a
+        type: float
+        default: '1'
+      - name: b
+        type: float
+        default: '2'
+    nodes:
+      start:
+        type: start
+        transition: 
+        - target: sum
+      sum:
+        type: task
+        task: Sum
+        input:
+        - name: a 
+          exp: a
+        - name: b 
+          exp: b  
+        output: 
+        - name: default 
+          assig: a
+        transition: 
+        - target: end
+      end:
+        type: end

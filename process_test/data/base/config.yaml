@@ -1,0 +1,43 @@
+Enum:  
+  Color:
+    values: 
+      Red: FF0000
+      Green: 00FF00
+      Blue: 0000FF
+
+Config:
+  Task:
+    Sum:
+      description:
+      input:
+      - name: a 
+        type: float
+      - name: b 
+        type: float  
+      output: 
+      - name: default
+        type: float     
+    Subtraction:
+      description:
+      input:
+      - name: a 
+        type: float
+      - name: b 
+        type: float  
+      output: 
+      - name: default
+        type: float 
+  
+
+    
+
+
+
+       
+
+
+
+ 
+
+
+       
