@@ -217,6 +217,30 @@ class BpmParser:
                 node.task.output.append(param)        
         return node
 
+    # TODO
+    def parseNodeScript(self,spec):pass
+    # TODO
+    def parseNodeExclusiveGateway(self,spec):pass
+    # TODO
+    def parseNodeInclusiveGateway(self,spec):pass
+    # TODO
+    def parseNodeParallelGateway(self,spec):pass
+    # TODO
+    def parseNodeEventGateway(self,spec):pass
+    # TODO
+    def parseNodeSubProcess(self,spec):pass
+    # TODO
+    def parseNodeUserTask(self,spec):pass
+    # TODO
+    def parseNodeServiceTask(self,spec):pass
+    # TODO
+    def parseNodeEventSignal(self,spec):pass
+    # TODO
+    def parseNodeStartSignal(self,spec):pass
+    # TODO
+    def parseNodeRaiseSignal(self,spec):pass
+
+
     def parseNodeDefault(self,node,spec):
         node.name = spec['name']
         node.type = spec['type']
@@ -392,7 +416,6 @@ mainManager.add(ConfigManager)
 mainManager.add(TypeManager) 
 
 mainManager.add(EnumManager)
-# mainManager.add(ExpManager)     
 mainManager.add(TaskManager) 
 mainManager.add(ProcessManager) 
 
