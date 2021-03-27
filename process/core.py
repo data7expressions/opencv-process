@@ -136,6 +136,7 @@ class BpmParser:
     def parse(self,spec:dict)-> ProcessSpec:
         process = ProcessSpec()
         process.name= spec['name']
+        process.type= spec['type']
         process.init=self.parseInit(spec) 
         process.declare=self.parseDeclare(spec) 
         process.vars=self.getVars(spec)
@@ -188,10 +189,11 @@ class BpmParser:
         elif type == 'end':return self.parseNodeEnd(spec)            
         elif type == 'task':return self.parseNodeTask(spec)
         else: raise ProcessError('not found node type :'+type) 
-        
-   
+     
     def parseNodeStart(self,spec):        
-        return self.parseNodeDefault(Object(),spec)
+        node= self.parseNodeDefault(Object(),spec)
+        node.expression = self.expManager.parse(spec['exp']) if 'exp' in spec else None
+        return node
     def parseNodeEnd(self,spec):        
         return self.parseNodeDefault(Object(),spec)
     def parseNodeTask(self,spec):        
@@ -244,6 +246,9 @@ class BpmParser:
     def parseNodeDefault(self,node,spec):
         node.name = spec['name']
         node.type = spec['type']
+        
+
+
         node.transition = self.parseTransition(spec)
         return node
 
@@ -284,10 +289,10 @@ class ProcessInstance:
         return self._context
 
     def init(self):
-        for p in self._spec.input:
-            if p.name not in self._context and p.defaul != None:
+        for p in self._spec.init:
+            if p.name not in self._context and p.default != None:
                 self._context[p.name] = self.eval(p.default,self._context,p.type)        
-        for p in self.declare:
+        for p in self._spec.declare:
             self._context[p.name] = self.eval(p.default,self._context,p.type) if p.default != None else None    
 
     def eval(self,expression:Operand,context:Context,_type:str=None):
@@ -319,8 +324,8 @@ class BpmInstance(ProcessInstance):
 
     def execute(self,_key):
         if self._context['__status']=='running':            
-            node=self._spec['nodes'][_key]
-            self._context['__current']={'name': node['name'] ,'type': node['type']} 
+            node=self._spec.nodes[_key]
+            self._context['__current']={'name':node.name ,'type': node.type } 
 
             if node.type == 'start': self.executeStart(node)                
             elif node.type == 'task': self.executeTask(node)                    
@@ -344,7 +349,7 @@ class BpmInstance(ProcessInstance):
             input={}
             for p in node.task.input:
                 value = self.eval(p.expression,self._context,p.type)
-                input[p['name']]= value 
+                input[p.name]= value 
             result=task.execute(**input)
             for i,p in enumerate(node.task.output):
                 self._context[p.assig]=result[i] if type(result) is tuple else result   
