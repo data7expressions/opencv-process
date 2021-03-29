@@ -121,13 +121,45 @@ class EnumManager(Manager):
         return self.expManager.getEnum(name)     
 
 
-
-
 class ProcessError(Exception):pass
-
 class Object(object):pass
-
 class ProcessSpec(object):pass
+class Token(object):pass
+
+"""
+para la implementacion de python se usara un diccionario para almacenar
+pero para la implementacion en go usar REDIS
+"""
+class TokenManager(Manager):
+    def __init__(self,mgr):
+        super(TokenManager,self).__init__(mgr)
+
+    def set(self,token:Token):
+        self._list[token.id] = token
+    def get(self,key:str)-> Token:
+        return self._list[key]
+
+    def getChilds(self,parentId):
+        parent = self.get(parentId)
+        list = []
+        for childId in parent.childs:
+            list.append(self.get(childId))
+        return list
+
+    def update(self,key:str,data:dict):
+        token= self._list[key]
+        for p in data:
+            setattr(token, p,data[p])
+    def delete(self,key:str):
+        del self._list[key]
+    def deleteChilds(self,parentId):
+        parent = self.get(parentId)
+        for childId in parent.childs:
+            self.delete(childId)
+ 
+
+
+
 
 class BpmParser:
     def __init__(self,mgr,expManager):
@@ -147,6 +179,9 @@ class BpmParser:
             specNode=spec['nodes'][key]
             specNode['name']=key
             process.nodes[key] =self.parseNode(specNode)
+        for key in process.nodes:
+            node=process.nodes[key]
+            node.entries= self.getEntries(key,process.nodes)
         return process    
 
     def parseInput(self,spec:dict):
@@ -185,6 +220,18 @@ class BpmParser:
             vars[p.name]=var
         return vars
     
+    def getEntries(self,key,nodes):
+        list = []
+        for name in nodes:
+            node=nodes[name]
+            for t in node.transition:
+                if t.target == key:
+                    s = Object()
+                    s.source= node
+                    s.transition = t
+                    list.append(s) 
+        return list  
+
     def parseNode(self,spec):
         type=spec['type'] 
         if type == 'start':return self.parseNodeStart(spec)
@@ -199,6 +246,7 @@ class BpmParser:
         node= self.parseNodeDefault(Object(),spec)
         node.expression = self.expManager.parse(spec['exp']) if 'exp' in spec else None
         return node
+
     def parseNodeTask(self,spec):        
         node= self.parseNodeDefault(Object(),spec)
         node.task = Object()
@@ -260,14 +308,15 @@ class BpmParser:
         return transition        
 
 class ProcessInstance:
-    def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
+    def __init__(self,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
         self._id=None 
-        self._parent=parent
         self._context=context
+        self._status='ready'
         self._spec=spec      
         self.mgr=mgr
         self.expManager = expManager 
         self.init()
+        
 
     @property
     def id(self):
@@ -297,53 +346,78 @@ class ProcessInstance:
         if _type == 'filepath' or _type == 'folderpath' :
             if not path.isabs(result): 
                 result = path.join(context['__workspace'], result)        
-        return result 
+        return result
+
+    def createToken(self,parent=None,node=None,status='running'):
+        token = Object()
+        token.id= str(uuid.uuid4())
+        token.process= self._spec.name,
+        token.mainId = parent.mainId if parent!= None else token
+        token.parentId = parent.id if parent!= None else token
+        token.status= status
+        token.node = node
+        token.childs = []
+        return token     
 
 class BpmInstance(ProcessInstance):
     def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
         super(BpmInstance,self).__init__(parent,spec,context,mgr,expManager)
-        self.gateways= {}
 
-    def start(self):
-        self.context['__status']='running'
+    
+
+    
+    def start(self,parent=None):
+        self._status='running'        
+        
         starts = dict(filter(lambda p: p[1].type == 'start', self._spec.nodes.items()))
+        target=None
         for name in starts:
             p = starts[name]
             if p.expression != None:
                 if self.eval(p.expression,self._context):
-                    self.execute(name)
+                    target= name
+                    break
             else:
-                self.execute(name)        
+                target= name
+                break 
+
+        if target == None: raise ProcessError('not found start node enabled')         
+        token=self.createToken(parent=parent,node=target)
+        self.mgr.Token.set(token)        
+        self.execute(token)    
+
 
     def stop(self):
-        self._context['__status']='stopping'
+        self._status='stopping'
     def pause(self):
-        self._context['__status']='pausing'   
+        self._status='pausing'   
 
-    def execute(self,_key):
-        if self._context['__status']=='running':            
-            node=self._spec.nodes[_key]
-            self._context['__current']={'name':node.name ,'type': node.type } 
+    def execute(self,token):
+        if self._status=='running':            
+            node=self._spec.nodes[token.node]
+            
+            # self._context['__current']={'name':node.name ,'type': node.type } 
 
-            if node.type == 'start': self.nextNode(node)                 
-            elif node.type == 'task': self.executeTask(node)                    
-            elif node.type == 'end':  self.executeEnd(node)
-            elif node.type == 'exclusiveGateway':self.nextNode(node)
-            elif node.type == 'inclusiveGateway':self.executeInclusiveGateway(node)
-            elif node.type == 'parallelGateway':self.executeParallelGateway(node)
+            if node.type == 'start': self.nextNode(node,token)                 
+            elif node.type == 'task': self.executeTask(node,token)                    
+            elif node.type == 'end':  self.executeEnd(node,token)
+            elif node.type == 'exclusiveGateway':self.nextNode(node,token)
+            elif node.type == 'inclusiveGateway':self.executeInclusiveGateway(node,token)
+            elif node.type == 'parallelGateway':self.executeParallelGateway(node,token)
 
             else: raise ProcessError('not found node type :'+node.type)                          
 
-            self._context['__last']={'name':node.name ,'type': node.type}   
+            # self._context['__last']={'name':node.name ,'type': node.type}   
             
-        elif self._context['__status']=='pausing':
-            self._context['__status']='paused'   
-        elif self._context['__status']=='stopping':
-            self._context['__status']='stopped'
+        elif self._status=='pausing':
+            self._status='paused'   
+        elif self._status=='stopping':
+            self._status='stopped'
          
-    def executeEnd(self,node):
-        pass
-    def executeTask(self,node):
+    def executeEnd(self,node,token):
+        token.status = 'end'
+
+    def executeTask(self,node,token):
         try:
             task = self.mgr.Task[node.task.name]
             input={}
@@ -356,55 +430,95 @@ class BpmInstance(ProcessInstance):
         except Exception as ex:
             print(ex)
             raise
-        self.nextNode(node)     
-    
+        self.nextNode(node,token)  
+
+    def executeInclusiveGateway(self,node,token):
+        subToken=False
+        pending = False
+        if len(node.entries) > 1:
+            if token.parentId != None:
+                childs = self.mgr.Token.getChilds(token.parentId) 
+                subToken=True
+                token.status = 'end'                
+                for child in childs:
+                    if child.id != token.id and child.status != 'end':
+                        pending=True
+                        break
+        if subToken:
+            if pending: return
+            else: 
+                parent = self.mgr.Token.get(token.parentId) 
+                self.mgr.Token.deleteChilds(token.parentId)        
+                token=parent
+        targets=self.getTargets(node,onlyFirst=False)       
+        if len(targets) == 1:
+            token.node = targets[0]
+            token.status = 'ready'
+            self.execute(token)
+        else:
+            for target in targets:
+               child=self.createToken(parent=token,node=target)
+               token.childs.append(child)
+               self.mgr.Token.set(child)
+            for child in token.childs:
+                self.execute(token)
+
     # https://stackoverflow.com/questions/7207309/how-to-run-functions-in-parallel
     # https://stackoverflow.com/questions/1559125/string-arguments-in-python-multiprocessing 
-    def executeParallelGateway(self,node):
-        if node.key in self.gateways:
-            parallels = self.gateways[node.key]
-            if len(parallels)> 0:
-                for p in parallels:
-                    p.join()
-        if len(node.transition) <= 1:
-            self.nextNode(node)
-        else:
-            parallels=[] 
-            for p in node.transition:
-                t =  ParallelProcess(target=self.execute ,args=(p.target,))                
-                parallels.append(t)
-            self.gateways[node.key]=parallels
-            for p in parallels:
-                p.start()
-    def executeInclusiveGateway(self,node):
-        if node.key in self.gateways:
-            count = self.gateways[node.key]
-            if count > 1:
-                count-=1
-                self.gateways[node.key] = count
+    def executeParallelGateway(self,node,token):
+
+        subToken=False
+        pending = False
+        if len(node.entries) > 1:
+            if token.parentId != None:
+                childs = self.mgr.Token.getChilds(token.parentId) 
+                if len(childs) > 1 :
+                    subToken=True
+                    token.status = 'end'
+                    token.thread.join()               
+                    for child in childs:
+                        if child.id != token.id and child.status != 'end':
+                            pending=True
+                            break
+        if subToken:
+            if pending: return
             else:
-                if len(node.transition) <= 1:
-                    self.nextNode(node)
-                else:
-                    self.gateways[node.key] = len(node.transition)
-                    for p in node.transition:
-                        if p.expression != None:
-                            if self.eval(p.expression,self._context):
-                                self.execute(p.target)
-                        else:
-                            self.execute(p.target)           
+                parent = self.mgr.Token.get(token.parentId) 
+                self.mgr.Token.deleteChilds(token.parentId)        
+                token=parent
+        targets=self.getTargets(node,onlyFirst=False)       
+        if len(targets) == 1:
+            token.node = targets[0]
+            token.status = 'ready'
+            self.execute(token)
+        else:
+            for target in targets:
+               child=self.createToken(parent=token,node=target)               
+               child.thread =  ParallelProcess(target=self.execute ,args=(token,))
+               token.childs.append(child)
+               self.mgr.Token.set(child)
+            for child in token.childs:
+                child.thread.start()
        
-    def nextNode(self,node):
+    def nextNode(self,node,token):
+        targets=self.getTargets(node)
+        token.node = targets[0]        
+        self.execute(token)        
+        
+    def getTargets(self,node,onlyFirst=True):
+        targets=[]
         for p in node.transition:
             if p.expression != None:
                 if self.eval(p.expression,self._context):
-                    self.execute(p.target)
-                    break 
+                    targets.append(p.target)
+                    if onlyFirst:break 
             else:
-                self.execute(p.target)
-                break
-        
-        
+                targets.append(p.target)
+                if onlyFirst:break
+
+        if len(targets) == 0:
+            raise ProcessError('node '+node.name+' not found targets')         
+        return targets            
       
                       
   
@@ -467,6 +581,7 @@ class ProcessManager(Manager):
 mainManager = MainManager()
 mainManager.add(ConfigManager) 
 mainManager.add(TypeManager) 
+mainManager.add(TokenManager)
 
 mainManager.add(EnumManager)
 mainManager.add(TaskManager) 

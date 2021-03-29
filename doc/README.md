@@ -34,6 +34,11 @@ opencv lab
 - [site](https://camunda.com/products/camunda-bpm/modeler/)
 
 
+# Persist
+## Redis
+- [oficial](https://redis.io/)
+- [amazon](https://aws.amazon.com/es/redis/)
+
 
 # libreries
 - [resumen](https://github.com/vinta/awesome-python)
