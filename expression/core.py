@@ -223,10 +223,14 @@ class LessThanOrEqual(Operator):
 
 class And(Operator):
     def solve(self,a,b):
-        return a and b   
+        if not a : return False
+        return b
+        # return a and b   
 class Or(Operator):
     def solve(self,a,b):
-        return a or b 
+        if a : return True
+        return b
+        # return a or b 
 class Not(Operator):
     @property
     def value(self):
