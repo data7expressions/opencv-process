@@ -8,7 +8,7 @@ from os import path
 import glob
 import importlib.util
 import inspect
-from multiprocessing import Process as ParallelProcess
+from multiprocessing import Process as ParallelProcess, process
 
 # TODO mover a mgr.core
 class MainManager(Manager,metaclass=Singleton):
@@ -134,8 +134,21 @@ class TokenManager(Manager):
     def __init__(self,mgr):
         super(TokenManager,self).__init__(mgr)
 
+    def create(self,process,parent=None,node=None,status='running')->Token:
+        token = Token()
+        token.id= str(uuid.uuid4())
+        token.process= process,
+        token.mainId = parent.mainId if parent!= None else token
+        token.parentId = parent.id if parent!= None else token
+        token.status= status
+        token.node = node
+        token.childs = []
+        return self.set(token.id,token)
+
     def set(self,token:Token):
         self._list[token.id] = token
+        return token
+
     def get(self,key:str)-> Token:
         return self._list[key]
 
@@ -146,16 +159,19 @@ class TokenManager(Manager):
             list.append(self.get(childId))
         return list
 
-    def update(self,key:str,data:dict):
-        token= self._list[key]
+    def update(self,token,data:dict):        
         for p in data:
             setattr(token, p,data[p])
-    def delete(self,key:str):
-        del self._list[key]
-    def deleteChilds(self,parentId):
-        parent = self.get(parentId)
+        return self.set(token) 
+
+    def delete(self,id:str):
+        del self._list[id]
+
+    def deleteChilds(self,parent):
         for childId in parent.childs:
             self.delete(childId)
+        parent.childs = []
+        return self.set(parent)    
  
 
 
@@ -346,18 +362,7 @@ class ProcessInstance:
         if _type == 'filepath' or _type == 'folderpath' :
             if not path.isabs(result): 
                 result = path.join(context['__workspace'], result)        
-        return result
-
-    def createToken(self,parent=None,node=None,status='running'):
-        token = Object()
-        token.id= str(uuid.uuid4())
-        token.process= self._spec.name,
-        token.mainId = parent.mainId if parent!= None else token
-        token.parentId = parent.id if parent!= None else token
-        token.status= status
-        token.node = node
-        token.childs = []
-        return token     
+        return result        
 
 class BpmInstance(ProcessInstance):
     def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
@@ -382,8 +387,7 @@ class BpmInstance(ProcessInstance):
                 break 
 
         if target == None: raise ProcessError('not found start node enabled')         
-        token=self.createToken(parent=parent,node=target)
-        self.mgr.Token.set(token)        
+        token=self.mgr.Token.create(process=self._spec.name,parent=parent,node=target)             
         self.execute(token)    
 
 
@@ -415,8 +419,7 @@ class BpmInstance(ProcessInstance):
             self._status='stopped'
          
     def executeEnd(self,node,token):
-        token.status = 'end'
-
+        token=self.mgr.Token.update(token,{'status':'end'})
     def executeTask(self,node,token):
         try:
             task = self.mgr.Task[node.task.name]
@@ -439,7 +442,7 @@ class BpmInstance(ProcessInstance):
             if token.parentId != None:
                 childs = self.mgr.Token.getChilds(token.parentId) 
                 subToken=True
-                token.status = 'end'                
+                token=self.mgr.Token.update(token,{'status':'end'})                
                 for child in childs:
                     if child.id != token.id and child.status != 'end':
                         pending=True
@@ -448,18 +451,17 @@ class BpmInstance(ProcessInstance):
             if pending: return
             else: 
                 parent = self.mgr.Token.get(token.parentId) 
-                self.mgr.Token.deleteChilds(token.parentId)        
-                token=parent
+                parent = self.mgr.Token.deleteChilds(parent)        
+                token = parent
         targets=self.getTargets(node,onlyFirst=False)       
         if len(targets) == 1:
-            token.node = targets[0]
-            token.status = 'ready'
+            token=self.mgr.Token.update(token,{'node':targets[0],'status':'ready'}) 
             self.execute(token)
         else:
             for target in targets:
-               child=self.createToken(parent=token,node=target)
+               child=self.mgr.Token.create(process=self._spec.name,parent=token,node=target)
                token.childs.append(child)
-               self.mgr.Token.set(child)
+            token=self.mgr.Token.update(token,{'childs':token.childs,'status':'await'})   
             for child in token.childs:
                 self.execute(token)
 
@@ -474,7 +476,7 @@ class BpmInstance(ProcessInstance):
                 childs = self.mgr.Token.getChilds(token.parentId) 
                 if len(childs) > 1 :
                     subToken=True
-                    token.status = 'end'
+                    token=self.mgr.Token.update(token,{'status':'end'})
                     token.thread.join()               
                     for child in childs:
                         if child.id != token.id and child.status != 'end':
@@ -484,25 +486,25 @@ class BpmInstance(ProcessInstance):
             if pending: return
             else:
                 parent = self.mgr.Token.get(token.parentId) 
-                self.mgr.Token.deleteChilds(token.parentId)        
+                parent = self.mgr.Token.deleteChilds(parent)        
                 token=parent
         targets=self.getTargets(node,onlyFirst=False)       
         if len(targets) == 1:
-            token.node = targets[0]
-            token.status = 'ready'
+            token=self.mgr.Token.update(token,{'node':targets[0],'status':'ready'}) 
             self.execute(token)
         else:
             for target in targets:
-               child=self.createToken(parent=token,node=target)               
-               child.thread =  ParallelProcess(target=self.execute ,args=(token,))
+               child=self.mgr.Token.create(process=self._spec.name,parent=token,node=target)             
+               thread =  ParallelProcess(target=self.execute ,args=(token,))
+               child=self.mgr.Token.update(child,{'thread':thread})
                token.childs.append(child)
-               self.mgr.Token.set(child)
+            token=self.mgr.Token.update(token,{'childs':token.childs,'status':'await'})     
             for child in token.childs:
                 child.thread.start()
        
     def nextNode(self,node,token):
         targets=self.getTargets(node)
-        token.node = targets[0]        
+        token=self.mgr.Token.update(token,{'node':targets[0] })              
         self.execute(token)        
         
     def getTargets(self,node,onlyFirst=True):

@@ -20,7 +20,6 @@ class Constant(Operand):
         return str(self._value)
     def __repr__(self):
         return str(self._value)    
-
 class Variable(Operand):
     def __init__(self,name ):
       self._name  = name
@@ -61,8 +60,6 @@ class Variable(Operand):
         return self._name
     def __repr__(self):
         return self._name      
-
-
 class Operator(Operand):
     def __init__(self,operands ):
       self._operands  = operands
@@ -163,7 +160,6 @@ class IndexDecorator(Operator):
     @property
     def value(self): 
         return self._operands[0].value[self._operands[1].value]
-
 class Addition(Operator):
     def solve(self,a,b):
         return a+b 
@@ -447,7 +443,7 @@ class Manager(metaclass=Singleton):
 class Parser():
     def __init__(self,mgr,string):
        self.mgr = mgr 
-       self.chars = self.getChars(string)
+       self.chars = self.clear(string)
        self.length=len(self.chars)
        self.index=0
        self.reAlphanumeric = re.compile('[a-zA-Z0-9_.]+$') 
@@ -456,7 +452,7 @@ class Parser():
   
 
     @staticmethod
-    def getChars(string):
+    def clear(string):
         isString=False
         quotes=None
         result =[]
