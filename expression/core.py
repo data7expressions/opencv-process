@@ -1,5 +1,12 @@
 import re
-from mgr.base import *
+# from mgr.base import *
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 class ExpressionError(Exception):pass
 
@@ -7,6 +14,57 @@ class Operand():
     @property
     def value(self): 
         pass
+
+    def __add__(self, other):return Addition([other,self]) 
+    def __sub__(self, other):return Subtraction([other,self])    
+    def __mul__(self, other):return Multiplication([other,self])
+    def __pow__(self, other):return Exponentiation([other,self]) 
+    def __truediv__(self, other):return Division([other,self]) 
+    def __floordiv__(self, other):return FloorDivision([other,self]) 
+    def __mod__(self, other):return Mod([other,self])
+
+    def __lshift__(self, other):return LeftShift([other,self])
+    def __rshift__(self, other):return RightShift([other,self])
+    def __and__(self, other):return BitAnd([other,self])
+    def __or__(self, other):return BitOr([other,self])
+    def __xor__(self, other):return BitXor([other,self])
+    def __invert__(self, other):return BitNot([other,self])
+
+    def __lt__(self, other):return LessThan([other,self])
+    def __le__(self, other):return LessThanOrEqual([other,self])
+    def __eq__(self, other):return Equal([other,self])
+    def __ne__(self, other):return NotEqual([other,self])
+    def __gt__(self, other):return GreaterThan([other,self])
+    def __ge__(self, other):return GreaterThanOrEqual([other,self])
+
+    def __not__(self):return Not([self])
+    def __and2__(self, other):return And([other,self])
+    def __or2__(self, other):return Or([other,self])
+
+    def __isub__(self, other):return AssigmentSubtraction([other,self])
+    def __iadd__(self, other):return AssigmentAddition([other,self])
+    def __imul__(self, other):return AssigmentMultiplication([other,self])
+    def __idiv__(self, other):return AssigmentDivision([other,self])
+    def __ifloordiv__(self, other):return AssigmentFloorDivision([other,self])
+    def __imod__(self, other):return AssigmentMod([other,self])
+    def __ipow__(self, other):return AssigmentExponentiation([other,self])
+
+
+    def setContext(self,expression,context):
+        if type(expression).__name__ ==  'Variable':
+            expression.context = context
+        if hasattr(expression, 'operands'):
+            for p in expression.operands:
+                if type(p).__name__ ==  'Variable':
+                    p.context = context
+                elif hasattr(p, 'operands'):
+                    self.setContext(p,context) 
+
+    def eval(self,context:dict=None):
+        if context != None:
+            self.setContext(self,context)
+        return self.value 
+
 class Constant(Operand):
     def __init__(self,value,type ):
       self._value  = value
@@ -222,15 +280,15 @@ class LessThanOrEqual(Operator):
         return a<=b                
 
 class And(Operator):
-    def solve(self,a,b):
-        if not a : return False
-        return b
-        # return a and b   
+    @property
+    def value(self):
+        if not self._operands[0].value : return False
+        return self._operands[1].value
 class Or(Operator):
-    def solve(self,a,b):
-        if a : return True
-        return b
-        # return a or b 
+    @property
+    def value(self):
+        if self._operands[0].value : return True
+        return self._operands[1].value
 class Not(Operator):
     @property
     def value(self):
@@ -416,26 +474,11 @@ class Manager(metaclass=Singleton):
                 return p['imp']
         return None
 
-    def setContext(self,expression,context):
-        if type(expression).__name__ ==  'Variable':
-            expression.context = context
-        if hasattr(expression, 'operands'):
-            for p in expression.operands:
-                if type(p).__name__ ==  'Variable':
-                    p.context = context
-                elif hasattr(p, 'operands'):
-                    self.setContext(p,context)    
-
     def solve(self,string:str,context:dict=None):        
         expression=self.parse(string)
-        return self.eval(expression,context)
+        return expression.eval(context) 
 
-    def eval(self,expression:Operand,context:dict=None):
-        if context != None:
-            self.setContext(expression,context)
-        return expression.value   
-
-    def parse(self,string):
+    def parse(self,string)->Operand:
         try:
             parser = Parser(self,string)
             expression= parser.parse() 
@@ -474,7 +517,7 @@ class Parser():
         operands=[]
         while not self.end:
             operand =self.getExpression(_break=';')
-            if operand == None:break
+            if operand is None:break
             operands.append(operand)
         if len(operands)==1 :
             return operands[0]
@@ -498,16 +541,16 @@ class Parser():
         b = None
         isbreak = False               
         while not self.end:
-            if a==None and op1==None: 
+            if a is None and op1 is None: 
                 a=  self.getOperand()
                 op1= self.getOperator()
-                if op1==None or op1 in _break: 
+                if op1 is None or op1 in _break: 
                     expression = a
                     isbreak= True
                     break
             b=  self.getOperand()
             op2= self.getOperator()
-            if op2 == None or op2 in _break:
+            if op2 is None or op2 in _break:
                 expression= self.mgr.new(op1,[a,b])
                 isbreak= True
                 break
@@ -536,12 +579,17 @@ class Parser():
     def getOperand(self):        
         isNegative=False
         isNot=False
+        isBitNot=False
         operand=None
         char = self.current
         if char == '-':
            isNegative=True
            self.index+=1
            char = self.current
+        elif char == '~':
+           isBitNot=True
+           self.index+=1
+           char = self.current            
         elif char == '!':
            isNot=True
            self.index+=1
@@ -564,23 +612,33 @@ class Parser():
 
             elif not self.end and self.current == '[':
                 self.index+=1    
-                idx, i= self.getExpression(_break=']')
+                idx= self.getExpression(_break=']')
                 operand= Variable(value)
                 operand = IndexDecorator(operand,idx)                
             elif self.reInt.match(value): 
                 if isNegative:
                     value = int(value)* -1
                     isNegative= False 
+                elif isBitNot:
+                    value = ~ int(value)
+                    isBitNot= False     
                 else:
                     value =int(value)
                 operand = Constant(value,'int')
             elif self.reFloat.match(value):
                 if isNegative:
                     value = float(value)* -1
-                    isNegative= False 
+                    isNegative= False
+                elif isBitNot:
+                    value = ~float(value)
+                    isBitNot= False      
                 else:
                     value =float(value)
                 operand = Constant(value,'float')
+            elif value=='true':                
+                 operand = Constant(True,type(True))
+            elif value=='false':                
+                 operand = Constant(False,type(False))          
             elif self.mgr.isEnum(value):                
                 if '.' in value and self.mgr.isEnum(value):
                     names = value.split('.')
@@ -609,7 +667,7 @@ class Parser():
             operand=  self.getExpression(_break=')') 
         elif char == '{':
             self.index+=1
-            operand,i = self.getObject()  
+            operand = self.getObject()  
         elif char == '[':
             self.index+=1
             elements=  self.getArgs(end=']')
@@ -624,6 +682,7 @@ class Parser():
 
         if isNegative:operand=NegativeDecorator(operand)
         if isNot:operand=NotDecorator(operand)
+        if isBitNot:operand=BitNot(operand)  
         return operand
 
     def priority(self,op):
@@ -648,10 +707,10 @@ class Parser():
         if self.index+2 < self.length:
             triple = self.current+self.next+self.chars[self.index+2]
             if triple in ['**=','//=','<<=','>>=']:op=triple
-        if op == None and  self.index+1 < self.length:
+        if op is None and  self.index+1 < self.length:
             double = self.current+self.next
             if double in ['**','//','>=','<=','!=','==','+=','-=','*=','/=','%=','&&','||','|=','^=','<<','>>']  :op=double
-        if op == None:op=self.current 
+        if op is None:op=self.current 
         self.index+=len(op)
         return op
 
@@ -678,11 +737,13 @@ class Parser():
         attributes= []
         while True:
             name= self.getValue()
-            if self.current!=':':
-                raise ExpressionError('attribute '+name+' without value')
+            if self.current==':':self.index+=1
+            else:raise ExpressionError('attribute '+name+' without value')
             value= self.getExpression(_break=',}')
             attribute = KeyValue(name,value)
             attributes.append(attribute)
-            if self.previous=='}': break
+            if self.previous=='}':
+                self.index+=1 
+                break
         
         return Object(attributes) 
