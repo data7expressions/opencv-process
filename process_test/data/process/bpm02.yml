@@ -1,6 +1,6 @@
 Process:
   bpm02:
-    type: bpm
+    kind: bpm
     input:
       a: float
       b: float
@@ -10,25 +10,25 @@ Process:
         b=2    
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: evaluate
       evaluate:
-        type: exclusiveGateway
+        kind: exclusiveGateway
         transition: 
         - target: subtraction
           exp: a>b
         - target: sum
           exp: a<=b
       sum:
-        type: task
+        kind: task
         exp: a = a + b
         transition: 
         - target: end    
       subtraction:
-        type: task
+        kind: task
         exp: a = a - b
         transition: 
         - target: end
       end:
-        type: end
+        kind: end

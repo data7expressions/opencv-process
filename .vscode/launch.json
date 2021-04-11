@@ -12,20 +12,6 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Expression",
-            "type": "python",
-            "request": "launch",
-            "console": "integratedTerminal",
-            "module": "expression"
-        },
-        {
-            "name": "Python: Test Expression",
-            "type": "python",
-            "request": "launch",
-            "console": "integratedTerminal",
-            "module": "expression_test"
-        },
-        {
             "name": "Python: Process",
             "type": "python",
             "request": "launch",

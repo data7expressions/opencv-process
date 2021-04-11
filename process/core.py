@@ -1,5 +1,6 @@
 from mgr.base import *
 from py_expression.core import Exp
+from .base import *
 import uuid
 import threading
 
@@ -176,11 +177,13 @@ class TokenManager(Manager):
 
 
 
+class ProcessParser():
+    def __init__(self,exp):        
+        self.exp = exp   
 
-class BpmParser:
-    def __init__(self,mgr,exp):
-        self.mgr = mgr
-        self.exp = exp     
+class BpmParser(ProcessParser):
+    def __init__(self,exp):
+        super(BpmParser,self).__init__(exp) 
 
     def parse(self,spec:dict)-> ProcessSpec:
         process = ProcessSpec()
@@ -490,38 +493,63 @@ class BpmInstance(ProcessInstance):
             raise ProcessError('node '+node.name+' not found targets')         
         return targets            
       
-                      
+
+class ProcessInstanceFactory():
+    def __init__(self,exp):        
+        self.exp = exp
+
+    def create(self,spec:ProcessSpec,context:Context,parent=None)-> ProcessInstance:
+        pass
+
+class BpmInstanceFactory():
+    def __init__(self,exp):        
+        super(ProcessInstanceFactory,self).__init__(exp) 
+
+    def create(self,spec:ProcessSpec,context:Context,parent=None)-> ProcessInstance:
+        return BpmInstance(parent,spec,context,self.exp)
+
   
-class ProcessManager(Manager):
-    def __init__(self,mgr):        
-        super(ProcessManager,self).__init__(mgr)
+class Process(metaclass=Singleton):
+    def __init__(self):
+        self._parsers={}
+        self._instanceFactory={}        
+        self._specs={}
         self._instances= {}
-        self.exp= Exp() 
-        self.bpmPaser= BpmParser(mgr,self.exp)
+        self.exp= Exp()
+
+    def addParser(self,key:str,parser:ProcessParser):
+        self._parsers[key] = parser(self.exp)  
+
+    def addInstanceFactory(self,key:str,factory:ProcessInstanceFactory):
+        self._instanceFactory[key] = factory(self.exp) 
+
+    def AddSpec(self,key:str,spec:dict)-> ProcessSpec:
+        processSpec =self.parse(key,spec)
+        self._specs[key] =processSpec
+        return processSpec      
 
     def parse(self,key:str,spec:dict)-> ProcessSpec:
         spec['name'] = key
-        type =spec['type']
-        if type == 'bpm': return self.bpmPaser.parse(spec)
-        else: raise ProcessError('not found process type :'+type) 
+        kind =spec['kind']
+        if kind not in self._parsers: raise ProcessError('not found parser kind :'+kind) 
+        return self._parsers[kind].parse(spec)
 
+
+    
+    # def apply(self,key:str,spec:dict,context:Context,parent=None)-> ProcessInstance:
+    #     processSpec =self.parse(key,spec)
+    #     self._specs[key]= processSpec 
+    #     return  self.createInstance(spec,context,parent)  
+    
+    
     def createInstance(self,spec:ProcessSpec,context:Context,parent=None)-> ProcessInstance:
-        instance=None
-        if spec.type == 'bpm': instance= BpmInstance(parent,spec,context,self.mgr,self.exp)
-        else: raise ProcessError('not found process type :'+spec.type)
+        if spec.kind not in self._instanceFactory: raise ProcessError('not found instance factory kind :'+spec.kind) 
+        instance=self._instanceFactory[spec.kind].create(parent,spec,context)
         instance.id = str(uuid.uuid4())
         return instance
-
-    def applyConfig(self,key,value):
-        self._list[key] =self.parse(key,value)
-    
-    def apply(self,key:str,spec:dict,context:Context,parent=None)-> ProcessInstance:
-        processSpec =self.parse(key,spec)
-        self._list[key]= processSpec 
-        return  self.createInstance(spec,context,parent) 
     
     def create(self,key:str,context:Context,parent=None)-> ProcessInstance:
-        spec=self._list[key]
+        spec=self._specs[key]
         return self.createInstance(spec,context,parent) 
 
     # https://www.genbeta.com/desarrollo/multiprocesamiento-en-python-threads-a-fondo-introduccion
@@ -547,6 +575,12 @@ class ProcessManager(Manager):
         return self._instances[id]
 
 
+exp= Exp()
+process = Process()
+process.addParser('bpm',BpmParser)
+process.addInstanceFactory('bpm',BpmInstanceFactory)
+
+
 
 mainManager = MainManager()
 mainManager.add(ConfigManager) 
@@ -555,7 +589,7 @@ mainManager.add(TokenManager)
 
 # mainManager.add(EnumManager)
 # mainManager.add(TaskManager) 
-mainManager.add(ProcessManager) 
+# mainManager.add(ProcessManager) 
 
 dir_path = path.dirname(path.realpath(__file__))
 mainManager.loadPlugin(path.join(dir_path,'main'))

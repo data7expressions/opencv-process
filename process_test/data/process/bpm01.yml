@@ -1,6 +1,6 @@
 Process:
   bpm01:
-    type: bpm
+    kind: bpm
     input:
       a: float
       b: float
@@ -10,13 +10,13 @@ Process:
         b=3
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: sum
       sum:
-        type: task
+        kind: task
         exp: a = a + b
         transition: 
         - target: end
       end:
-        type: end
+        kind: end
