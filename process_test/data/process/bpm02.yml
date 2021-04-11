@@ -2,12 +2,12 @@ Process:
   bpm02:
     type: bpm
     input:
-      - name: a
-        type: float
-        default: '1'
-      - name: b
-        type: float
-        default: '2'
+      a: float
+      b: float
+    init:
+      exp: |
+        a=1
+        b=2    
     nodes:
       start:
         type: start
@@ -22,28 +22,12 @@ Process:
           exp: a<=b
       sum:
         type: task
-        task: Sum
-        input:
-        - name: a 
-          exp: a
-        - name: b 
-          exp: b  
-        output: 
-        - name: default 
-          assig: a
+        exp: a = a + b
         transition: 
         - target: end    
       subtraction:
         type: task
-        task: Subtraction 
-        input:
-        - name: a 
-          exp: a
-        - name: b 
-          exp: b  
-        output: 
-        - name: default 
-          assig: a
+        exp: a = a - b
         transition: 
         - target: end
       end:

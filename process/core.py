@@ -1,5 +1,5 @@
 from mgr.base import *
-from expression.core import Manager as ExpressionManager, Operand
+from py_expression.core import Exp
 import uuid
 import threading
 
@@ -103,22 +103,22 @@ class TypeManager(Manager):
             from_ = 0 
         return from_,to          
 
-class TaskManager(Manager):
-    def __init__(self,mgr):
-        super(TaskManager,self).__init__(mgr)  
+# class TaskManager(Manager):
+#     def __init__(self,mgr):
+#         super(TaskManager,self).__init__(mgr)  
 
-class EnumManager(Manager):
-    def __init__(self,mgr):
-        super(EnumManager,self).__init__(mgr)
-        self.expManager = ExpressionManager()
+# class EnumManager(Manager):
+#     def __init__(self,mgr):
+#         super(EnumManager,self).__init__(mgr)
+#         self.exp = Exp()
 
-    def applyConfig(self,_key,value):
-        self.addEnum(_key,value['values'])
+#     def applyConfig(self,_key,value):
+#         self.addEnum(_key,value['values'])
 
-    def addEnum(self,name,values:dict):
-        self.expManager.addEnum(name,values)
-    def getEnum(self,name):
-        return self.expManager.getEnum(name)     
+#     def addEnum(self,name,values:dict):
+#         self.exp.addEnum(name,values)
+#     def getEnum(self,name):
+#         return self.exp.getEnum(name)     
 
 
 class ProcessError(Exception):pass
@@ -178,9 +178,9 @@ class TokenManager(Manager):
 
 
 class BpmParser:
-    def __init__(self,mgr,expManager):
+    def __init__(self,mgr,exp):
         self.mgr = mgr
-        self.expManager = expManager     
+        self.exp = exp     
 
     def parse(self,spec:dict)-> ProcessSpec:
         process = ProcessSpec()
@@ -188,7 +188,8 @@ class BpmParser:
         process.type= spec['type']
         process.bind = spec['bind'] if 'bind' in spec else []
         process.input=self.parseInput(spec) 
-        process.declare=self.parseDeclare(spec) 
+        process.declare=self.parseDeclare(spec)
+        process.init=self.parseInit(spec)  
         process.vars=self.getVars(process)
         process.nodes = {}        
         for key in spec['nodes']:
@@ -205,9 +206,8 @@ class BpmParser:
         if 'input' in spec:
             for p in spec['input']:
                 param  = Object()
-                param.name = p['name']
-                param.type = p['type']
-                param.default = self.expManager.parse(p['default']) if 'default' in p else None
+                param.name = p
+                param.type = spec['input'][p]
                 input.append(param)
         return input         
 
@@ -216,11 +216,16 @@ class BpmParser:
         if 'declare' in spec:
             for p in spec['declare']:
                 param  = Object()
-                param.name = p['name']
-                param.type = p['type']
-                param.default = self.expManager.parse(p['default']) if 'default' in p else None
+                param.name = p
+                param.type = spec['declare'][p]
                 declare.append(param)
-        return declare                            
+        return declare 
+
+    def parseInit(self,spec:dict):
+        init = {}
+        if 'init' in spec:
+            init.expression = self.exp.parse(spec['init']['exp'])           
+        return init                                
 
     def getVars(self,process:ProcessSpec):
         vars={}    
@@ -260,30 +265,12 @@ class BpmParser:
      
     def parseNodeStart(self,spec):        
         node= self.parseNodeDefault(Object(),spec)
-        node.expression = self.expManager.parse(spec['exp']) if 'exp' in spec else None
+        node.expression = self.exp.parse(spec['exp']) if 'exp' in spec else None
         return node
 
     def parseNodeTask(self,spec):        
         node= self.parseNodeDefault(Object(),spec)
-        node.task = Object()
-        node.task.name= spec['task']
-        node.task.input= []
-        node.task.output= []
-        taskSpec=self.mgr.Config['Task'][spec['task']]
-        if 'input' in taskSpec:       
-            for p in spec['input']:
-                param = Object()
-                param.name = p['name']
-                param.type = next(x for x in taskSpec['input'] if x['name'] == p['name'])['type']
-                param.expression = self.expManager.parse(p['exp'])
-                node.task.input.append(param)
-        if 'output' in taskSpec:   
-            for p in spec['output']:
-                param = Object()
-                param.name = p['name']
-                param.type = next(x for x in taskSpec['output'] if x['name'] == p['name'])['type']
-                param.assig = p['assig']                
-                node.task.output.append(param)        
+        node.expression= self.exp.parse(spec['exp']) if 'exp' in spec else None 
         return node
 
     def parseNodeGateway(self,spec):        
@@ -319,18 +306,18 @@ class BpmParser:
             for p in spec['transition']:
                 item = Object()
                 item.target = p['target']
-                item.expression = self.expManager.parse(p['exp']) if 'exp' in p else None
+                item.expression = self.exp.parse(p['exp']) if 'exp' in p else None
                 transition.append(item)
         return transition        
 
 class ProcessInstance:
-    def __init__(self,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
+    def __init__(self,spec:ProcessSpec,context:Context,mgr:MainManager,exp:Exp):
         self._id=None 
         self._context=context
         self._status='ready'
         self._spec=spec      
         self.mgr=mgr
-        self.expManager = expManager 
+        self.exp = exp 
         self.init()
         
 
@@ -351,24 +338,12 @@ class ProcessInstance:
         return self._context
 
     def init(self):
-        for p in self._spec.input:
-            if p.name not in self._context and p.default != None:
-                self._context[p.name] = self.eval(p.default,self._context,p.type)        
-        for p in self._spec.declare:
-            self._context[p.name] = self.eval(p.default,self._context,p.type) if p.default != None else None    
-
-    def eval(self,expression:Operand,context:Context,_type:str=None):
-        result=self.expManager.eval(expression,context)
-        if _type == 'filepath' or _type == 'folderpath' :
-            if not path.isabs(result): 
-                result = path.join(context['__workspace'], result)        
-        return result        
+        if 'init' in self._spec and 'expression' in self._spec.init:
+            self.exp.eval(self._spec.init.expression,self._context)
 
 class BpmInstance(ProcessInstance):
-    def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,expManager:ExpressionManager):
-        super(BpmInstance,self).__init__(parent,spec,context,mgr,expManager)
-
-    
+    def __init__(self,parent:str,spec:ProcessSpec,context:Context,mgr:MainManager,exp:Exp):
+        super(BpmInstance,self).__init__(parent,spec,context,mgr,exp)   
 
     
     def start(self,parent=None):
@@ -379,7 +354,7 @@ class BpmInstance(ProcessInstance):
         for name in starts:
             p = starts[name]
             if p.expression != None:
-                if self.eval(p.expression,self._context):
+                if self.exp.eval(p.expression,self._context):
                     target= name
                     break
             else:
@@ -422,14 +397,7 @@ class BpmInstance(ProcessInstance):
         token=self.mgr.Token.update(token,{'status':'end'})
     def executeTask(self,node,token):
         try:
-            task = self.mgr.Task[node.task.name]
-            input={}
-            for p in node.task.input:
-                value = self.eval(p.expression,self._context,p.type)
-                input[p.name]= value 
-            result=task.execute(**input)
-            for i,p in enumerate(node.task.output):
-                self._context[p.assig]=result[i] if type(result) is tuple else result   
+            self.exp.eval(node.expression,self._context)
         except Exception as ex:
             print(ex)
             raise
@@ -511,7 +479,7 @@ class BpmInstance(ProcessInstance):
         targets=[]
         for p in node.transition:
             if p.expression != None:
-                if self.eval(p.expression,self._context):
+                if self.exp.eval(p.expression,self._context):
                     targets.append(p.target)
                     if onlyFirst:break 
             else:
@@ -528,8 +496,8 @@ class ProcessManager(Manager):
     def __init__(self,mgr):        
         super(ProcessManager,self).__init__(mgr)
         self._instances= {}
-        self.expManager= ExpressionManager() 
-        self.bpmPaser= BpmParser(mgr,self.expManager)
+        self.exp= Exp() 
+        self.bpmPaser= BpmParser(mgr,self.exp)
 
     def parse(self,key:str,spec:dict)-> ProcessSpec:
         spec['name'] = key
@@ -539,7 +507,7 @@ class ProcessManager(Manager):
 
     def createInstance(self,spec:ProcessSpec,context:Context,parent=None)-> ProcessInstance:
         instance=None
-        if spec.type == 'bpm': instance= BpmInstance(parent,spec,context,self.mgr,self.expManager)
+        if spec.type == 'bpm': instance= BpmInstance(parent,spec,context,self.mgr,self.exp)
         else: raise ProcessError('not found process type :'+spec.type)
         instance.id = str(uuid.uuid4())
         return instance
@@ -585,8 +553,8 @@ mainManager.add(ConfigManager)
 mainManager.add(TypeManager) 
 mainManager.add(TokenManager)
 
-mainManager.add(EnumManager)
-mainManager.add(TaskManager) 
+# mainManager.add(EnumManager)
+# mainManager.add(TaskManager) 
 mainManager.add(ProcessManager) 
 
 dir_path = path.dirname(path.realpath(__file__))

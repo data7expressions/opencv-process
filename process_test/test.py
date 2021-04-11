@@ -2,12 +2,16 @@ from unittest import TestCase,main
 from process.core import *
 from mgr.base import Context
 from os import path,getcwd
+from py_expression.core import Parser
+from py_expression_opencv.lib import *
 
 currentPath = path.dirname(path.realpath(__file__))
 mgr = MainManager()
 mgr.loadPlugin(path.join(currentPath,'data/base'))
 mgr.loadPlugin(path.join(currentPath,'data/process'))
 
+parser=Parser()
+loadOpenCvExpressions(parser)
 
 class TestProcess(TestCase):
     def test_simple(self):

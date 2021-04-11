@@ -1,0 +1,39 @@
+Process:
+  test:
+    type: bpm
+    input:
+      source: filepath
+      target: filepath
+    declare:
+      colorConversion: ColorConversion
+      img: cvImage
+      gray: cvImage
+    init:
+      exp: |
+          source=nvl(source,"data/source.jpg");
+          target=nvl(source,"data/target.jpg");
+          colorConversion=ColorConversion.BGR2RGB;
+    bind: [colorConversion,img,gray]
+    nodes:
+      start:
+        type: start
+        transition: 
+        - target: readImage
+      readImage:
+        type: task
+        exp: 'img=cvImread(filename)'     
+        transition: 
+        - target: transform
+      transform:
+        type: task
+        exp: 'gray=cvtColor(img,colorConversion)'
+        transition: 
+        - target: save
+      save:
+        type: task
+        exp: 'cvImwrite(target,gray)'
+        transition: 
+        - target: end
+      end:
+        type: end   
+    
