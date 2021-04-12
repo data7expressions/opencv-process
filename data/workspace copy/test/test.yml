@@ -1,6 +1,6 @@
 Process:
   test:
-    kind: bpm
+    type: bpm
     input:
       source: filepath
       target: filepath
@@ -16,24 +16,24 @@ Process:
     bind: [colorConversion,img,gray]
     nodes:
       start:
-        kind: start
+        type: start
         transition: 
         - target: readImage
       readImage:
-        kind: task
+        type: task
         exp: 'img=cvImread(filename)'     
         transition: 
         - target: transform
       transform:
-        kind: task
+        type: task
         exp: 'gray=cvtColor(img,colorConversion)'
         transition: 
         - target: save
       save:
-        kind: task
+        type: task
         exp: 'cvImwrite(target,gray)'
         transition: 
         - target: end
       end:
-        kind: end   
+        type: end   
     

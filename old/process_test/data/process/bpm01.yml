@@ -6,8 +6,8 @@ Process:
       b: float
     init:
       exp: |
-        a=2
-        b=3
+        a=nvl(a,2);
+        b=nvl(b,3);
     nodes:
       start:
         kind: start

@@ -6,8 +6,8 @@ Process:
       b: float
     init:
       exp: |
-        a=1
-        b=2    
+        a=1;
+        b=2;    
     nodes:
       start:
         kind: start

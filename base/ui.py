@@ -11,10 +11,10 @@ from tkinter import messagebox as mb
 import queue as q
 from os import path, getcwd, listdir
 from PIL import ImageTk, Image
-from mgr.base import *
-from mgr.manager import *
-from mgr.tkinter import *
 from ttkthemes import ThemedStyle
+
+from py_mgr.core import *
+from py_mgr_tkinter.core import *
 
 
 class MainUi(Frame):
