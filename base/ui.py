@@ -102,6 +102,9 @@ class MainUi(Frame):
         return self.mgr.Config.Ui['Main'] 
 
     def set(self, workspacePath):
+        # TODO: debe cargar el plugin del para importar los processos 
+        # , pero deberia limpiar los procesos del workspace anterior
+        self.mgr.loadPlugin(workspacePath)  
         name = path.basename(workspacePath)
         self.master.title(name)
         self.tree.load(workspacePath)

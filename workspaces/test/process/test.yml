@@ -2,14 +2,19 @@ Process:
   test:
     kind: bpm
     input:
+      workspace: path
       source: filepath
       target: filepath
     declare:
       colorConversion: ColorConversion
       img: cvImage
       gray: cvImage
+      volume: Volume
+      finished : string
     init:
       exp: |
+          finished="not";
+          volume=Volume(workspace);
           source=nvl(source,"data/source.jpg");
           target=nvl(source,"data/target.jpg");
           colorConversion=ColorConversion.BGR2RGB;
@@ -21,7 +26,7 @@ Process:
         - target: readImage
       readImage:
         kind: task
-        exp: 'img=cvImread(filename)'     
+        exp: 'img=cvImread(volume.fullpath(source))'     
         transition: 
         - target: transform
       transform:
@@ -31,9 +36,14 @@ Process:
         - target: save
       save:
         kind: task
-        exp: 'cvImwrite(target,gray)'
+        exp: 'cvImwrite(volume.fullpath(target),gray)'
         transition: 
-        - target: end
+        - target: finish
+      finish:
+        kind: task
+        exp: 'finished="yes"'
+        transition: 
+        - target: end  
       end:
         kind: end   
     
