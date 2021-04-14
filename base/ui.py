@@ -13,13 +13,17 @@ from os import path, getcwd, listdir
 from PIL import ImageTk, Image
 from ttkthemes import ThemedStyle
 
-from py_mgr.core import *
+from .mgr import *
+# from py_mgr.core import *
 from py_mgr_tkinter.core import *
+# from py_process.core import Process,ProcessInstance, ProcessSpec
+from .process import Process,ProcessInstance, ProcessSpec
 
 
 class MainUi(Frame):
     def __init__(self, master, mgr,**kw):
         super(MainUi, self).__init__(master,mgr,UiMediatior(),**kw)
+        self._context = Context({})
 
     def init(self):
         self.style = ThemedStyle(self)
@@ -101,9 +105,18 @@ class MainUi(Frame):
     def config(self):
         return self.mgr.Config.Ui['Main'] 
 
+    @property
+    def context(self)->Context:
+        return self._context  
+    
+    @context.setter
+    def context(self,value:Context):
+        self._context=value       
+
     def set(self, workspacePath):
         # TODO: debe cargar el plugin del para importar los processos 
         # , pero deberia limpiar los procesos del workspace anterior
+        self._context['workspace']=workspacePath
         self.mgr.loadPlugin(workspacePath)  
         name = path.basename(workspacePath)
         self.master.title(name)
@@ -270,49 +283,49 @@ class ProcessDiagramPanel(Frame):
         self.showGraph(img)
    
     def createGraph(self,spec):
-        filename = path.join('temp', spec['name'])
-        f = Digraph(comment='The Round Table', filename=filename,engine='neato', format="png")
+        filename = path.join('temp', spec.name)
+        f = Digraph(comment=spec.kind, filename=filename,engine='neato', format="png")
 
-        try:
-            nodes = spec['nodes']
-            starts = dict(filter(lambda p: p[1]['type'] == 'start', nodes.items()))
+        try:           
+            starts = dict(filter(lambda p: p[1].kind == 'start', spec.nodes.items()))
             for name in starts:
                 f.attr('node', shape='circle')
                 f.node(name, name)
 
-            tasks = dict(filter(lambda p: p[1]['type'] == 'task', nodes.items()))
+            tasks = dict(filter(lambda p: p[1].kind == 'task', spec.nodes.items()))
             for name in tasks:
-                task = tasks[name]
-
-                str_input = ''
-                for p in task['input']:
-                    sep = '' if str_input == '' else ','
-                    str_input = str_input+sep+p['name']+':'+p['exp']
-
-                str_output = ''
-                for p in task['output']:
-                    sep = '' if str_output == '' else ','
-                    str_output = str_output+sep+p['assig']
-
-                label = ''
-                if str_output == '':
-                    label = task['task']+'('+str_input+')'
-                else:
-                    label = str_output+'='+task['task']+'('+str_input+')'
-
                 f.attr('node', shape='box')
-                f.node(name, label)
+                f.node(name, name)
 
-            ends = dict(filter(lambda p: p[1]['type'] == 'end', nodes.items()))
+                # task = tasks[name]    
+                # str_input = ''
+                # for p in task['input']:
+                #     sep = '' if str_input == '' else ','
+                #     str_input = str_input+sep+p['name']+':'+p['exp']
+
+                # str_output = ''
+                # for p in task['output']:
+                #     sep = '' if str_output == '' else ','
+                #     str_output = str_output+sep+p['assig']
+
+                # label = ''
+                # if str_output == '':
+                #     label = task['task']+'('+str_input+')'
+                # else:
+                #     label = str_output+'='+task['task']+'('+str_input+')'
+
+                # f.attr('node', shape='box')
+                # f.node(name, label)
+
+            ends = dict(filter(lambda p: p[1].kind == 'end', spec.nodes.items()))
             for name in ends:
                 f.attr('node', shape='doublecircle')
                 f.node(name, name)
 
-            for source in nodes:
-                node = nodes[source]
-                transition = node['transition']
-                for p in transition:
-                    f.edge(source,p['target'])
+            for source in spec.nodes:
+                node = spec.nodes[source]                
+                for p in node.transition:
+                    f.edge(source,p.target)
         except Exception as ex:
             print(ex)
         f.render()
@@ -403,9 +416,6 @@ class DecimalUi(Control):
     def set(self,value:float):
         self.bindVar.set(str(value))
 
-
-
-
 class StringUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
         super(StringUi, self).__init__(type,var,varName,mgr,master,**kw)
@@ -425,9 +435,9 @@ class StringUi(Control):
     def set(self,value):
         self.bindVar.set(value)
 
-class FilepathUi(Control):
+class FolderpathUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
-        super(FilepathUi, self).__init__(type,var,varName,mgr,master,**kw)
+        super(FolderpathUi, self).__init__(type,var,varName,mgr,master,**kw)
         self.bindVar = tk.StringVar()
         self.bindVar.trace("w", lambda name, index, mode, sv=self.bindVar: self.onChanged())
         
@@ -453,14 +463,17 @@ class FilepathUi(Control):
     def set(self,value):
         self.bindVar.set(value)
 
+class FilepathUi(FolderpathUi):
+    def __init__(self,type,var,varName,mgr=None,master=None,**kw):
+        super(FilepathUi, self).__init__(type,var,varName,mgr,master,**kw)
+
 class EnumUi(Control):
     def __init__(self,type,var,varName,mgr=None,master=None,**kw):
-        super(EnumUi, self).__init__(type,var,varName,mgr,master,**kw)
-        enumName=var['type'].replace('Enum.','')
-        self.enum= self.mgr.Enum[enumName]
+        super(EnumUi, self).__init__(type,var,varName,mgr,master,**kw)        
+        self.enum= self.mgr.Enum.getEnum(var.type)
         
         self.lbl = tk.Label(self,text=varName)        
-        self.cmb = ttk.Combobox(self,values=sorted(self.enum.values.keys()))       
+        self.cmb = ttk.Combobox(self,values=sorted(self.enum.keys()))       
         self.cmb.bind('<<ComboboxSelected>>',self.onChanged)
 
         self.lbl.place(relx=0, y=0,relwidth=0.4, height=25)
@@ -468,15 +481,15 @@ class EnumUi(Control):
         self.pack()        
 
     def get(self):                              
-        return self.enum.values[self.get_key()]
+        return self.enum[self.get_key()]
 
     def get_key(self):
         return self.cmb.get()
 
     def set(self,value):
         key=None 
-        for k in self.enum.values: 
-            if self.enum.values[k]== value:
+        for k in self.enum: 
+            if self.enum[k]== value:
                 key=k
                 break
         if key != None:
@@ -679,11 +692,11 @@ class ControlsPanel(Frame):
             i=i+1                    
 
     def createControl(self,key,var):
-        typeName = 'enum' if var['type'].startswith('Enum.') else var['type']
+        typeName = 'enum' if self.mgr.Enum.isEnum(var.type) else var.type
         type = self.mgr.Type[typeName]
         control= self.mgr.Ui.new(type['ctl'],type=type,var=var,varName=key,mgr=self.mgr,master=self)
-        if 'initValue' in var:
-            control.set(var['initValue'])
+        # if 'initValue' in var:
+        #     control.set(var['initValue'])
         return control        
 
     def controlOnChanged(self, event):
@@ -718,6 +731,8 @@ class FileProcessUi(FileEditor):
         self.inputVarsPanel = ControlsPanel(self,self.mgr,self.mediator,title='input')
         self.processVarsPanel = ControlsPanel(self,self.mgr,self.mediator,title='bind vars')
         self.grapthVarsPanel = GrapthPanel(self,self.mgr,self.mediator,title='bind grapth')
+        self.context = None
+        self.processSpec = None
         self.processInstance = None
         self._status.set('stopped')
         
@@ -734,38 +749,33 @@ class FileProcessUi(FileEditor):
         # context = {'source':'/home/flavio/develop/opencv-process/data/workspace/data/source.jpg'
         #           ,'target':'/home/flavio/develop/opencv-process/data/workspace/data/target.jpg'
         #           }
-        context ={'__workspace':self.mgr.context['workspace']}          
-        spec = self.getProcess(fullpath)          
-        self.processInstance = self.mgr.Process.apply(spec['name'],spec,context)
+        self.context =Context({'workspace':self.mgr.Ui['Main'].context['workspace']})
+        self.context.onChange += self.process_context_onChange            
+        self.processSpec = self.getProcess(fullpath)
+        vars = self.processSpec.vars
 
-        vars = self.processInstance.spec['vars']
-        context = self.processInstance.context
-        for p in vars:
-            if p in context:
-                vars[p]['initValue'] = context[p]
-
-        self.inputVars = dict(filter(lambda p: p[1]['isInput']== True, vars.items()))
-        self.processVars = dict(filter(lambda p: p[1]['bind'] == True and p[1]['isInput']== False and p[1]['type']!='cvImage',vars.items()))
-        self.grapthVars = dict(filter(lambda p: p[1]['bind'] == True and p[1]['isInput']== False and p[1]['type']=='cvImage', vars.items()))
-        self.diagram.set(self.processInstance.spec)
+        self.inputVars = dict(filter(lambda p: p[1].isInput== True, vars.items()))
+        self.processVars = dict(filter(lambda p: p[1].bind == True and p[1].isInput== False and p[1].type!='cvImage',vars.items()))
+        self.grapthVars = dict(filter(lambda p: p[1].bind == True and p[1].isInput== False and p[1].type=='cvImage', vars.items()))
+        self.diagram.set(self.processSpec)
         
         self.inputVarsPanel.set(self.inputVars)
         self.processVarsPanel.set(self.processVars)
-        self.grapthVarsPanel.set(self.grapthVars)        
-
-        context.onChange += self.process_context_onChange
+        self.grapthVarsPanel.set(self.grapthVars)
+        
         self.inputVarsPanel.onChange+= self.control_onChange
         self.processVarsPanel.onChange+= self.control_onChange
         self.grapthVarsPanel.onChange+= self.control_onChange
-        
- 
-  
 
+        self.processInstance = self.mgr.Process.create(self.processSpec.name,self.context)
+        for p in self.inputVars:
+            if p in self.context:
+                self.inputVarsPanel.contextOnChange(p,self.context[p])
 
     def onMessage(self,sender,verb,resource,args): 
         if self.current == False:
             return
-        if resource == 'process' and self.processInstance.spec != None:
+        if resource == 'process' and self.processSpec != None:
             if verb == 'start':
                 self.process_start()
             elif verb == 'stop':
@@ -773,7 +783,7 @@ class FileProcessUi(FileEditor):
             elif verb == 'pause':
                 self.process_pause()         
 
-    def getProcess(self, processPath):
+    def getProcess(self, processPath)-> ProcessSpec:
         name = None
         spec = None
         with open(processPath, 'r') as stream:
@@ -788,8 +798,7 @@ class FileProcessUi(FileEditor):
             except Exception as ex:
                 print(ex)    
 
-        self.mgr.Process.completeSpec(name,spec)
-        return spec
+        return self.mgr.Process.applyConfig(name,spec)
 
     def process_start(self):
         self._status.set('started')
@@ -828,7 +837,7 @@ class FileProcessUi(FileEditor):
             self.processVarsPanel.contextOnChange(key,value) 
 
     def control_onChange(self,key,value):
-        self.processInstance.context[key]=value
+        self.context[key]=value
 
             
 

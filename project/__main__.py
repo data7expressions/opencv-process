@@ -18,10 +18,14 @@ def ui(mgr):
     mgr.Ui.add(NumberUi)
     mgr.Ui.add(DecimalUi)    
     mgr.Ui.add(StringUi) 
-    mgr.Ui.add(FilepathUi) 
+    mgr.Ui.add(FolderpathUi) 
+    mgr.Ui.add(FilepathUi)
     mgr.Ui.add(PointUi)
     mgr.Ui.add(SizeUi) 
-    mgr.Ui.add(RectangleUi)  
+    mgr.Ui.add(RectangleUi) 
+    mgr.Ui.add(CoordinateUi) 
+
+     
     
     tk=Tk()
     iconProvider = TkIconProvider(path.join(getcwd(), 'assets/icons'))

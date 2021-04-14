@@ -1,8 +1,10 @@
 
 from os import path,getcwd,listdir
-from py_expression.core import Exp
+from .py_expression import Exp
+# from py_expression.core import Exp
 from py_expression_opencv.lib import *
-from py_mgr.core import MainManager
+# from py_mgr.core import MainManager
+from .mgr import MainManager
 from .core import *
 
 def initialize():

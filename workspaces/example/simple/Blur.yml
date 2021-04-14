@@ -2,7 +2,7 @@ Process:
   blur:
     kind: bpm
     input:
-      workspace: path
+      workspace: folderpath
       source: filepath
     declare:
       ratio: int

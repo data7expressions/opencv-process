@@ -1,0 +1,17 @@
+// bpm
+digraph {
+	node [shape=circle]
+	start [label=start]
+	node [shape=box]
+	readImage [label=readImage]
+	node [shape=box]
+	transform [label=transform]
+	node [shape=box]
+	save [label=save]
+	node [shape=doublecircle]
+	end [label=end]
+	start -> readImage
+	readImage -> transform
+	transform -> save
+	save -> end
+}

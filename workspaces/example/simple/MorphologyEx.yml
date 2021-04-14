@@ -1,7 +1,8 @@
 Process:
-  test:
+  morphologyex:
+    kind: bpm
     input:
-      workspace: path
+      workspace: folderpath
       source: filepath
     declare:
       operation: MorphTypes

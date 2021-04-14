@@ -1,0 +1,99 @@
+# http://elvex.ugr.es/decsai/csharp/language/data.xml
+# https://docs.microsoft.com/es-es/dotnet/csharp/language-reference/builtin-types/integral-numeric-types
+# https://www.monografias.com/trabajos107/tipos-datos-opencv/tipos-datos-opencv.shtml
+
+Type:
+  sbyte:
+    precision: 8
+    sign: True
+    ctl: Number    
+  byte:
+    precision: 8
+    sign: False
+    ctl: Number 
+  short:
+    precision: 16
+    sign: True
+    ctl: Number 
+  ushort:
+    precision: 16
+    sign: False
+    ctl: Number 
+  int:
+    precision: 32
+    sign: True
+    ctl: Number 
+  uint:
+    precision: 32
+    sign: False
+    ctl: Number 
+  long:
+    precision: 64
+    sign: True
+    ctl: Number 
+  ulong:
+    precision: 64
+    sign: False
+    ctl: Number 
+  decimal:
+    precision: 128
+    sign: False
+    ctl: Decimal 
+  string:
+    ctl: String
+  enum:
+    ctl: Enum
+  scalar:
+    struct:
+      val: long[4]
+    ctl: scalar    
+  point:
+    struct:
+      x: int
+      y: int
+    ctl: Point
+  coordinate:
+    struct:
+      x: int
+      y: int
+      z: int
+    ctl: Coordinate     
+  size:
+    struct:
+      width: int
+      height: int
+    ctl: Size    
+  rectangle:
+    struct:
+      x: int
+      y: int
+      width: int
+      height: int
+    ctl: Rectangle
+  rgb:
+    struct:
+      r: byte
+      g: byte
+      b: byte
+    ctl: Rgb        
+  image:
+    ctl: ImageCtl 
+  filename:
+    base: string
+    ctl: filename
+  filepath:
+    base: string
+    ctl: Filepath
+    re: (.+?)(\.[^.]*$|$)
+  folderpath:
+    base: string
+    ctl: Folderpath
+    re: \\(\\\w+)*\\  
+  email:
+    base: string
+    ctl: textbox
+    re: ^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$
+  url:
+    base: string
+    ctl: textbox
+    re: (?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\  
