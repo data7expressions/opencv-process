@@ -1,0 +1,40 @@
+Process:
+  blur:
+    kind: bpm
+    input:
+      workspace: path
+      source: filepath
+    declare:
+      ratio: int
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume 
+    init:
+      exp: |
+        ratio = 100;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");
+    bind: [ratio,sleepSecs,image,result]     
+    nodes:
+      start:
+        kind: start
+        transition: 
+        - target: readImage
+      readImage:
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
+        transition: 
+        - target: transform
+      transform:
+        kind: task
+        exp: 'result=cvBlur(image,ratio)'       
+        transition: 
+        - target: sleep
+      sleep:
+        kind: task
+        exp: 'sleep(sleepSecs)'
+        transition: 
+        - target: transform   
+    

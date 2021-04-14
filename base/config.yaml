@@ -1,0 +1,17 @@
+Type:
+  cvImage:
+    ctl: CvImage
+  Volume:
+    struct:
+      fullpath: function(string)-> string
+    ctl:   
+
+Config:
+  Ui:
+    FileImage:
+      extensions: [jpg,png,gif]
+    FileProcess:
+      #la idea es usar la extension ypml 
+      extensions: [yml]
+    FileEditor:
+      extensions: [yaml]

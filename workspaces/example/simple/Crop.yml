@@ -1,0 +1,39 @@
+Process:
+  test:
+    input:
+      workspace: path
+      source: filepath
+    declare:
+      rectangle: rectangle
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
+    init:
+      exp: |
+        rectangle = {"x":50,"y":50,"width":80,"height":60};
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");      
+    bind: [rectangle,sleepSecs,image,result]
+    nodes:
+      start:
+        kind: start
+        transition: 
+        - target: readImage
+      readImage:
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
+        transition: 
+        - target: transform
+      transform:
+        kind: task
+        exp: 'result=cvCrop(image,rectangle)'
+        transition: 
+        - target: sleep
+      sleep:
+        kind: task
+        exp: 'sleep(sleepSecs)'
+        transition: 
+        - target: transform   
+    

@@ -1,0 +1,49 @@
+Process:
+  test:
+    kind: bpm
+    input:
+      workspace: path
+      source: filepath
+      target: filepath
+    declare:
+      colorConversion: ColorConversion
+      img: cvImage
+      gray: cvImage
+      volume: Volume
+      finished : string
+    init:
+      exp: |
+          finished="not";
+          volume=Volume(workspace);
+          source=nvl(source,"data/source.jpg");
+          target=nvl(target,"data/target.jpg");
+          colorConversion=ColorConversion.BGR2GRAY;
+    bind: [colorConversion,img,gray]
+    nodes:
+      start:
+        kind: start
+        transition: 
+        - target: readImage
+      readImage:
+        kind: task
+        exp: 'img=cvImread(volume.fullpath(source))'     
+        transition: 
+        - target: transform
+      transform:
+        kind: task
+        exp: 'gray=cvtColor(img,colorConversion)'
+        transition: 
+        - target: save
+      save:
+        kind: task
+        exp: 'cvImwrite(volume.fullpath(target),gray)'
+        transition: 
+        - target: finish
+      finish:
+        kind: task
+        exp: 'finished="yes"'
+        transition: 
+        - target: end  
+      end:
+        kind: end   
+    

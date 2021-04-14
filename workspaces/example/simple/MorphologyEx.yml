@@ -1,0 +1,45 @@
+Process:
+  test:
+    input:
+      workspace: path
+      source: filepath
+    declare:
+      operation: MorphTypes
+      elementType: MorphShapes
+      elementSize: int
+      iterations: int
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
+    init:
+      exp: |
+        operation = MorphTypes.GRADIENT;
+        elementType = MorphShapes.RECT;
+        elementSize = 5;
+        iterations = 1;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");  
+    bind: [operation,elementType,elementSize,iterations,sleepSecs,image,result]
+    nodes:
+      start:
+        kind: start
+        transition: 
+        - target: readImage
+      readImage:
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
+        transition: 
+        - target: transform
+      transform:
+        kind: task
+        exp: 'result=cvMorphologyEx(image,operation,elementType,elementSize,iterations)'
+        transition: 
+        - target: sleep
+      sleep:
+        kind: task
+        exp: 'sleep(sleepSecs)'
+        transition: 
+        - target: transform   
+    

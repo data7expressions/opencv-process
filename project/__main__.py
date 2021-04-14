@@ -1,28 +1,9 @@
 
 from tkinter import *
-
-from os import path,getcwd,listdir
-#from mgr.core import *
-# from mgr.process import *
-from mgr.base import *
-from mgr.manager import * 
-from mgr.tkinter import *
-from .ui.main import *
-
-rootpath = getcwd()
-
-def init():   
-   plugins= []
-   plugins.append(path.join(rootpath,'plugins/opencv'))
-#    plugins.append(path.join(rootpath,'project/ui'))
-   plugins.append(path.join(rootpath,'data/workspace'))
-
-
-   mgr = MainManager()
-   mgr.init(plugins) 
-   mgr.context['workspace']=path.join(getcwd(),'data/workspace')
-
-   return mgr
+from os import path,getcwd
+from py_mgr_tkinter.core import *
+from base.init import initialize
+from base.ui import *
 
 def ui(mgr):
 
@@ -40,28 +21,15 @@ def ui(mgr):
     mgr.Ui.add(FilepathUi) 
     mgr.Ui.add(PointUi)
     mgr.Ui.add(SizeUi) 
-    mgr.Ui.add(RectangleUi)
-
+    mgr.Ui.add(RectangleUi)  
     
-
-    
-
-    mgr.applyConfig(path.join(rootpath,'project/ui/config.yaml'))
-    
-
     tk=Tk()
-    iconProvider= IconProvider(path.join(getcwd(),'project/assets/icons'))
-    mgr.addIconProvider(iconProvider)
-   
+    iconProvider = TkIconProvider(path.join(getcwd(), 'assets/icons'))
+    mgr.addIconProvider(iconProvider)   
     main=mgr.Ui.singleton('Main',master=tk)
-    main.set(mgr.context['workspace'])
+    main.set(path.join(getcwd(),'workspaces/example'))
     main.mainloop()    
 
-def test(mgr):
-    mgr.Test.List.execute()
-    # mgr.Test.Process.execute()
-
 if __name__ == '__main__':
-    mgr=init()
-    test(mgr)
-    # ui(mgr)
+    mgr=initialize()
+    ui(mgr)

@@ -1,0 +1,42 @@
+Process:
+  test:
+    input:
+      workspace: path
+      source: filepath
+    declare:
+      kernel: int
+      sigma: int
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
+    init:
+      exp: |
+        kernel = 7;
+        sigma = 3;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");     
+    bind: [kernel,sigma,sleepSecs,image,result]
+    nodes:
+      start:
+        kind: start
+        transition: 
+        - target: readImage
+      readImage:
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
+        transition: 
+        - target: transform
+      transform:
+        kind: task
+        exp: 'result=cvGaussianBlur(image,kernel,sigma)' 
+        task: GaussianBlur
+        transition: 
+        - target: sleep
+      sleep:
+        kind: task
+        exp: 'sleep(sleepSecs)'
+        transition: 
+        - target: transform   
+    
