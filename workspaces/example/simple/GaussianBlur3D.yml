@@ -1,58 +1,43 @@
 Process:
   test:
     input:
-      - name: source
-        type: filepath
-        default: data/source.jpg
-    bind: [kernel,coordinate,borderType,sleepSecs,image,result]
+      workspace: path
+      source: filepath
+    declare:
+      kernel: int
+      coordinate: coordinate
+      borderType: BorderTypes
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
     init:
-      - name: kernel
-        exp: 7
-      - name: coordinate
-        exp: {"x":1,"y":1,"z":1} 
-      - name: borderType
-        exp: Enum.BorderTypes.DEFAULT   
-      - name: sleepSecs
-        exp: 1   
+      exp: |
+        kernel = 7;
+        coordinate = {"x":1,"y":1,"z":1};
+        borderType = BorderTypes.DEFAULT;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");      
+    bind: [kernel,coordinate,borderType,sleepSecs,image,result]
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: readImage
       readImage:
-        type: task
-        task: ImRead
-        input:
-        - name: filename 
-          exp: $source
-        output: 
-        - name: default 
-          assig: image
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
         transition: 
         - target: transform
       transform:
-        type: task
-        task: GaussianBlur3D
-        input:
-        - name: image
-          exp: $image
-        - name: kernel
-          exp: $kernel
-        - name: coordinate
-          exp: $coordinate
-        - name: borderType
-          exp: $borderType               
-        output: 
-        - name: default 
-          assig: result
+        kind: task
+        exp: 'result=cvGaussianBlur3D(image,kernel,coordinate,borderType)'
         transition: 
         - target: sleep
       sleep:
-        type: task
-        task: Sleep
-        input:
-        - name: secs
-          exp: $sleepSecs
+        kind: task
+        exp: 'sleep(sleepSecs)'
         transition: 
         - target: transform   
     

@@ -24,7 +24,7 @@ def ui(mgr):
     mgr.Ui.add(RectangleUi)  
     
     tk=Tk()
-    iconProvider = IconProvider(path.join(getcwd(), 'assets/icons'))
+    iconProvider = TkIconProvider(path.join(getcwd(), 'assets/icons'))
     mgr.addIconProvider(iconProvider)   
     main=mgr.Ui.singleton('Main',master=tk)
     main.set(path.join(getcwd(),'workspaces/example'))

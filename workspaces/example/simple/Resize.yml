@@ -1,50 +1,39 @@
 Process:
   test:
     input:
-      - name: source
-        type: filepath
-        default: data/source.jpg
-    bind: [percent,sleepSecs,image,result]
+      workspace: path
+      source: filepath
+    declare:
+      percent: int
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
     init:
-      - name: percent
-        exp: 50
-      - name: sleepSecs
-        exp: 1   
+      exp: |
+        percent = 50;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");      
+    bind: [percent,sleepSecs,image,result]
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: readImage
       readImage:
-        type: task
-        task: ImRead
-        input:
-        - name: filename 
-          exp: $source
-        output: 
-        - name: default 
-          assig: image
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
         transition: 
         - target: transform
       transform:
-        type: task
-        task: Resize
-        input:
-        - name: image
-          exp: $image
-        - name: percent
-          exp: $percent      
-        output: 
-        - name: default 
-          assig: result
+        kind: task
+        exp: 'result=cvResize(image,percent)'
         transition: 
         - target: sleep
       sleep:
-        type: task
-        task: Sleep
-        input:
-        - name: secs
-          exp: $sleepSecs
+        kind: task
+        exp: 'sleep(sleepSecs)'
         transition: 
         - target: transform   
     

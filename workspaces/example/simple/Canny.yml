@@ -1,54 +1,42 @@
 Process:
-  test:
+  canny:
+    kind: bpm
     input:
-      - name: source
-        type: filepath
-        default: data/source.jpg
-    bind: [threshold1,threshold2,sleepSecs,image,result]
+      workspace: path
+      source: filepath
+    declare:
+      threshold1: int
+      threshold2: int
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
     init:
-      - name: threshold1
-        exp: 10
-      - name: threshold2
-        exp: 150
-      - name: sleepSecs
-        exp: 1   
+      exp: |
+        sleepSecs = 1;
+        threshold1 = 1;
+        threshold1 = 150;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");     
+    bind: [threshold1,threshold2,sleepSecs,image,result]
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: readImage
       readImage:
-        type: task
-        task: ImRead
-        input:
-        - name: filename 
-          exp: $source
-        output: 
-        - name: default 
-          assig: image
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
         transition: 
         - target: transform
       transform:
-        type: task
-        task: Canny
-        input:
-        - name: image
-          exp: $image
-        - name: threshold1
-          exp: $threshold1
-        - name: threshold2
-          exp: $threshold2       
-        output: 
-        - name: default 
-          assig: result
+        kind: task
+        exp: 'result=cvCanny(image,threshold1,threshold2)' 
         transition: 
         - target: sleep
       sleep:
-        type: task
-        task: Sleep
-        input:
-        - name: secs
-          exp: $sleepSecs
+        kind: task
+        exp: 'sleep(sleepSecs)'
         transition: 
         - target: transform   
     

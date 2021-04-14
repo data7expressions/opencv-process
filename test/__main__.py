@@ -32,7 +32,7 @@ class TestManager(unittest.TestCase):
         mgr.Process.start(instance, sync=True)
         self.assertEqual(context['finished'], 'yes')        
 
-g
+
 if __name__ == '__main__':
     mgr = initialize()
     unittest.main()

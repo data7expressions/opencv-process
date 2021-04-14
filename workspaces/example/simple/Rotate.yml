@@ -1,50 +1,39 @@
 Process:
   test:
     input:
-      - name: source
-        type: filepath
-        default: data/source.jpg
-    bind: [angle,sleepSecs,image,result]
+      workspace: path
+      source: filepath
+    declare:
+      angle: RotateAngle
+      sleepSecs: int
+      image: cvImage
+      result: cvImage
+      volume: Volume
     init:
-      - name: angle
-        exp: enum.RotateAngle.180
-      - name: sleepSecs
-        exp: 1         
+      exp: |
+        angle = RotateAngle.180;
+        sleepSecs = 1;
+        volume=Volume(workspace);
+        source=nvl(source,"data/source.jpg");     
+    bind: [angle,sleepSecs,image,result]
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: readImage
       readImage:
-        type: task
-        task: ImRead
-        input:
-        - name: filename 
-          exp: $source
-        output: 
-        - name: default 
-          assig: image
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
         transition: 
         - target: transform
       transform:
-        type: task
-        task: Rotate
-        input:
-        - name: image
-          exp: $image
-        - name: angle
-          exp: $angle       
-        output: 
-        - name: default 
-          assig: result
+        kind: task
+        exp: 'result=cvRotate(image,angle)'
         transition: 
         - target: sleep
       sleep:
-        type: task
-        task: Sleep
-        input:
-        - name: secs
-          exp: $sleepSecs
+        kind: task
+        exp: 'sleep(sleepSecs)'
         transition: 
         - target: transform   
     

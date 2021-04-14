@@ -1,55 +1,42 @@
 Process:
   test:
     input:
-      - name: source
-        type: filepath
-        default: data/source.jpg
-      - name: target
-        type: filepath
-        default: data/target.jpg
-    bind: [colorConversion,img,gray]
+      workspace: path
+      source: filepath
+      target: filepath
+    declare:
+      colorConversion: ColorConversion
+      image: cvImage
+      gray: cvImage
+      volume: Volume
     init:
-      - name: colorConversion
-        exp: enum.ColorConversion.BGR2RGB
+      exp: |
+          volume=Volume(workspace);
+          source=nvl(source,"data/source.jpg");
+          target=nvl(target,"data/target.jpg");
+          colorConversion=ColorConversion.BGR2GRAY;   
+    bind: [colorConversion,image,gray]
     nodes:
       start:
-        type: start
+        kind: start
         transition: 
         - target: readImage
       readImage:
-        type: task
-        task: ImRead
-        input:
-        - name: filename 
-          exp: $source
-        output: 
-        - name: default 
-          assig: img
+        kind: task
+        exp: 'image=cvImread(volume.fullpath(source))'
         transition: 
         - target: transform
       transform:
-        type: task
-        task: CvtColor
-        input:
-        - name: source
-          exp: $img
-        - name: code
-          exp: $colorConversion    
-        output: 
-        - name: default 
-          assig: gray
+        kind: task
+        exp: 'gray=cvtColor(image,colorConversion)'
         transition: 
         - target: save
       save:
-        type: task
+        kind: task
         task: ImWrite
-        input:
-        - name: filename
-          exp: $target
-        - name: img
-          exp: $gray
+        exp: 'cvImwrite(volume.fullpath(target),gray)'
         transition: 
         - target: end
       end:
-        type: end   
+        kind: end   
     

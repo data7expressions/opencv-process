@@ -16,8 +16,8 @@ Process:
           finished="not";
           volume=Volume(workspace);
           source=nvl(source,"data/source.jpg");
-          target=nvl(source,"data/target.jpg");
-          colorConversion=ColorConversion.BGR2RGB;
+          target=nvl(target,"data/target.jpg");
+          colorConversion=ColorConversion.BGR2GRAY;
     bind: [colorConversion,img,gray]
     nodes:
       start:
