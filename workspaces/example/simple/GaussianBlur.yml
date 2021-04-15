@@ -1,7 +1,8 @@
 Process:
-  test:
+  gaussianblur:
+    kind: bpm
     input:
-      workspace: path
+      workspace: folderpath
       source: filepath
     declare:
       kernel: int

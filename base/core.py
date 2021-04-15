@@ -1,6 +1,9 @@
-from py_mgr.core import Manager
-from py_process.core import Process,ProcessInstance, ProcessSpec
-from py_expression.core import Exp
+# from py_mgr.core import Manager
+from .mgr import Manager
+# from py_process.core import Process,ProcessInstance, ProcessSpec
+from .process import Process,ProcessInstance, ProcessSpec
+from .py_expression import Exp
+# from py_expression.core import Exp
 
 class EnumManager(Manager):
     def __init__(self,mgr):
@@ -13,6 +16,9 @@ class EnumManager(Manager):
     def addEnum(self,name,values:dict):
         self.exp.addEnum(name,values)
 
+    def isEnum(self,name):
+        return self.exp.isEnum(name)     
+
     def getEnum(self,name):
         return self.exp.getEnum(name)   
 
@@ -21,8 +27,8 @@ class ProcessManager(Manager):
         super(ProcessManager,self).__init__(mgr)
         self.process = Process()
 
-    def applyConfig(self,key,value):
-        self.process.addSpec(key,value)   
+    def applyConfig(self,key,value)-> ProcessSpec:
+        return self.process.addSpec(key,value)   
 
     def getSpec(self,key)-> ProcessSpec:
         return self.process.getSpec(key)          

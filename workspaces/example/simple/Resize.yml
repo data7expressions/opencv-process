@@ -1,7 +1,8 @@
 Process:
-  test:
+  resize:
+    kind: bpm
     input:
-      workspace: path
+      workspace: folderpath
       source: filepath
     declare:
       percent: int

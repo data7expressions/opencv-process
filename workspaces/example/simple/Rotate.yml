@@ -1,7 +1,8 @@
 Process:
-  test:
+  rotate:
+    kind: bpm
     input:
-      workspace: path
+      workspace: folderpath
       source: filepath
     declare:
       angle: RotateAngle
