@@ -17,6 +17,7 @@ def initialize():
     mgr.add(ProcessManager)
 
     dir_path = path.dirname(path.realpath(__file__))
+    # mgr.loadPlugin(path.join(dir_path,'main'))      
     mgr.applyConfig(path.join(dir_path,'config.yaml'))    
 
     return mgr;

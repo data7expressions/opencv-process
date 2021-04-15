@@ -675,9 +675,15 @@ class ControlsPanel(Frame):
             self.lblTitle.place(relx=0,y=0,relwidth=1, height=20)
 
     def set(self, vars):
+        self.removeControls()
         self.initControls(vars)
         self.layoutControls() 
 
+    def removeControls(self):
+        for name in self._controls:
+            self._controls[name].destroy()
+        self._controls = {}
+            
     def initControls(self,vars):        
         for name in vars:
             control = self.createControl(name,vars[name])
