@@ -297,26 +297,6 @@ class ProcessDiagramPanel(Frame):
                 f.attr('node', shape='box')
                 f.node(name, name)
 
-                # task = tasks[name]    
-                # str_input = ''
-                # for p in task['input']:
-                #     sep = '' if str_input == '' else ','
-                #     str_input = str_input+sep+p['name']+':'+p['exp']
-
-                # str_output = ''
-                # for p in task['output']:
-                #     sep = '' if str_output == '' else ','
-                #     str_output = str_output+sep+p['assig']
-
-                # label = ''
-                # if str_output == '':
-                #     label = task['task']+'('+str_input+')'
-                # else:
-                #     label = str_output+'='+task['task']+'('+str_input+')'
-
-                # f.attr('node', shape='box')
-                # f.node(name, label)
-
             ends = dict(filter(lambda p: p[1].kind == 'end', spec.nodes.items()))
             for name in ends:
                 f.attr('node', shape='doublecircle')
