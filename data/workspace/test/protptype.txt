@@ -1,0 +1,46 @@
+# Ejemplo de procesos
+
+Test(source filepath='data/source.jpg',target filepath='data/target.jpg') Bpm:
+	declare:
+		colorConversion: ColorConversion = ColorConversion.BGR2RGB
+		img: cvImage
+		gray: cvImage
+	nodes:
+		start:
+      type: start
+			next: readImage
+		readImage:
+      type: task
+			invoke: img=ImRead(filename=source) 
+			next: transform
+		transform:
+      type: task	
+			invoke: gray=CvtColor(source=img,code=colorConversion) 
+			next: save
+		save :
+      type: task
+			invoke: ImWrite(filename=target,img=gray)
+			next: end
+		end:
+      type: end
+	bind: [colorConversion,img,gray]
+
+# Gateways
+a :
+ type: exclusiveGateway
+ next:
+    node1: a>b  
+    node2: a==b
+    node3:  a<b
+b :
+  type: inclusiveGateway
+  next:
+    node1: a>b  
+    node2: a==b
+    node3:  a<b
+c:
+  type: parallelGateway
+  next:
+    node1: a>b  
+    node2: a==b
+    node3:  a<b
